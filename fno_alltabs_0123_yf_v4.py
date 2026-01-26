@@ -383,6 +383,7 @@ if df is not None:
                 st.write(inf.get('longBusinessSummary', 'N/A')[:600] + "...")
         except Exception as e:
             st.error("Yahoo Finance Rate Limit hit. Fundamentals are temporarily unavailable. Technicals still work!")
+            
     with t[12]: # BACKTEST
         st.info("Strategy: SMA50 Trend Following")
         st.dataframe(df[['Symbol', 'ST_Dir', 'MA50', 'MA200']])
@@ -407,6 +408,7 @@ if df is not None:
 else:
 
     st.info("System Standby. Execute Market Scan to activate modules.")
+
 
 
 
