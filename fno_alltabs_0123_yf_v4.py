@@ -363,6 +363,7 @@ if df is not None:
 
     with t[10]: # FLOWS
         st.plotly_chart(px.bar(df, x="Symbol", y="VFI", color="VFI", color_continuous_scale="RdYlGn"))
+    
     with t[11]: # DEEP DIVE
     dd_sel = st.selectbox("Select Target", df['Symbol'].unique(), key="dd_box")
     
@@ -406,5 +407,6 @@ if df is not None:
 else:
 
     st.info("System Standby. Execute Market Scan to activate modules.")
+
 
 
