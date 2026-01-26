@@ -364,25 +364,23 @@ if df is not None:
     with t[10]: # FLOWS
         st.plotly_chart(px.bar(df, x="Symbol", y="VFI", color="VFI", color_continuous_scale="RdYlGn"))
     
-    with t[11]: # DEEP DIVE
-    dd_sel = st.selectbox("Select Target", df['Symbol'].unique(), key="dd_box")
-    
-    # Only fetch fundamental data when this tab is active and a symbol is selected
-    if st.button(f"🔍 Fetch Deep Data for {dd_sel}"):
-        try:
-            tick = yf.Ticker(f"{dd_sel}.NS")
-            # Using a timeout or checking for specific keys safely
-            inf = tick.info 
-            
-            d1, d2 = st.columns([1, 2])
-            with d1:
-                st.metric("Market Cap", f"₹{inf.get('marketCap', 0)//10**7:,.0f} Cr")
-                st.metric("P/E Ratio", f"{inf.get('trailingPE', 'N/A')}")
-            with d2:
-                st.subheader(inf.get('longName', dd_sel))
-                st.write(inf.get('longBusinessSummary', 'N/A')[:600] + "...")
-        except Exception as e:
-            st.error("Yahoo Finance Rate Limit hit. Fundamentals are temporarily unavailable. Technicals still work!")
+     with t[11]: # DEEP DIVE (Fundamentals + Peer Comparison)
+        dd_sel = st.selectbox("Deep Dive Target", df['Symbol'].unique())
+        tick = yf.Ticker(f"{dd_sel}.NS")
+        inf = tick.info
+        
+        d1, d2 = st.columns([1, 2])
+        with d1:
+            st.metric("Market Cap", f"₹{inf.get('marketCap', 0)//10**7:,.0f} Cr")
+            st.metric("P/E Ratio", f"{inf.get('trailingPE', 'N/A'):,.2f}")
+            st.metric("Beta", f"{inf.get('beta', 'N/A'):,.2f}")
+        with d2:
+            st.subheader(inf.get('longName', dd_sel))
+            st.write(inf.get('longBusinessSummary', 'N/A')[:600] + "...")
+            st.write("---")
+            st.subheader("👥 Sector Peer Comparison")
+            peers = df[df['Sector'] == df[df['Symbol'] == dd_sel]['Sector'].values[0]]
+            st.dataframe(peers[['Symbol', 'SCORE', 'LTP', 'CHG', 'RSI']], hide_index=True)
             
     with t[12]: # BACKTEST
         st.info("Strategy: SMA50 Trend Following")
@@ -408,6 +406,7 @@ if df is not None:
 else:
 
     st.info("System Standby. Execute Market Scan to activate modules.")
+
 
 
 
