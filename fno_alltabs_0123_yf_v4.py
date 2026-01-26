@@ -175,7 +175,7 @@ with st.sidebar:
                 # 2. Momentum & Overbought Protection (Max 30 pts)
                 s2 = 0
                 curr_rsi = rsi.iloc[-1]
-                if 55 <= curr_rsi <= 75: 
+                if 55 <= curr_rsi <= 70: 
                     s2 = 30  # "Sweet Spot" Momentum
                 elif curr_rsi > 75:
                     s2 = 15  # Caution: Overbought territory
@@ -187,7 +187,8 @@ with st.sidebar:
                 curr_adx = adx.iloc[-1, 0]
                 is_bull_st = (st_df is not None and st_df.iloc[-1, 1] > 0)
                 
-                if is_bull_st: s3 += 15
+                if curr_c > vwap.iloc[-1]: s3 += 5
+                if is_bull_st: s3 += 5
                 if curr_adx > 25: s3 += 15 # Strong Trend Confirmation
                 elif curr_adx > 40: s3 += 5 # Exhaustion risk but high strength
 
