@@ -7,20 +7,11 @@ import plotly.graph_objects as go
 import numpy as np
 import math
 import calendar
-import requests
 from datetime import datetime, timedelta
 from streamlit_autorefresh import st_autorefresh
-
 # --- 1. CORE SYSTEM & THEME ---
 st.set_page_config(page_title="Apex Sovereign v170.0", layout="wide", page_icon="🏛️")
 st_autorefresh(interval=5 * 60 * 1000, key="apex_refresher")
-
-# Create a custom session to mimic a browser
-session = requests.Session()
-session.headers.update({
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-})
-
 def get_last_thursday(dt):
     last_day = calendar.monthrange(dt.year, dt.month)[1]
     last_date = datetime(dt.year, dt.month, last_day)
@@ -434,3 +425,4 @@ if df is not None:
 else:
 
     st.info("System Standby. Execute Market Scan to activate modules.")
+
