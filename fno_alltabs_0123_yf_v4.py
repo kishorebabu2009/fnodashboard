@@ -9,9 +9,11 @@ import math
 import calendar
 from datetime import datetime, timedelta
 from streamlit_autorefresh import st_autorefresh
+
 # --- 1. CORE SYSTEM & THEME ---
 st.set_page_config(page_title="Apex Sovereign v170.0", layout="wide", page_icon="🏛️")
 st_autorefresh(interval=5 * 60 * 1000, key="apex_refresher")
+
 def get_last_thursday(dt):
     last_day = calendar.monthrange(dt.year, dt.month)[1]
     last_date = datetime(dt.year, dt.month, last_day)
@@ -363,8 +365,8 @@ if df is not None:
 
     with t[10]: # FLOWS
         st.plotly_chart(px.bar(df, x="Symbol", y="VFI", color="VFI", color_continuous_scale="RdYlGn"))
-    
-     with t[11]: # DEEP DIVE (Fundamentals + Peer Comparison)
+
+    with t[11]: # DEEP DIVE (Fundamentals + Peer Comparison)
         dd_sel = st.selectbox("Deep Dive Target", df['Symbol'].unique())
         tick = yf.Ticker(f"{dd_sel}.NS")
         inf = tick.info
@@ -381,7 +383,7 @@ if df is not None:
             st.subheader("👥 Sector Peer Comparison")
             peers = df[df['Sector'] == df[df['Symbol'] == dd_sel]['Sector'].values[0]]
             st.dataframe(peers[['Symbol', 'SCORE', 'LTP', 'CHG', 'RSI']], hide_index=True)
-            
+
     with t[12]: # BACKTEST
         st.info("Strategy: SMA50 Trend Following")
         st.dataframe(df[['Symbol', 'ST_Dir', 'MA50', 'MA200']])
@@ -404,10 +406,4 @@ if df is not None:
         st.download_button("📥 Export Report", df.to_csv(index=False), "Apex_Full_Report.csv")
 
 else:
-
     st.info("System Standby. Execute Market Scan to activate modules.")
-
-
-
-
-
