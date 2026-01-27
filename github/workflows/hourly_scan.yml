@@ -1,0 +1,25 @@
+name: Hourly Apex Scan
+on:
+  schedule:
+    # Runs every hour from 04:00 to 11:00 UTC (9:30 AM to 4:30 PM IST)
+    - cron: '30 4-11 * * 1-5'
+  workflow_dispatch: # Allows you to run it manually for testing
+
+jobs:
+  run-scanner:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - name: Install Dependencies
+        run: pip install yfinance pandas pandas_ta
+      - name: Execute Scan
+        env:
+          EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
+          EMAIL_RECEIVER: ${{ secrets.EMAIL_RECEIVER }}
+          EMAIL_PASSWORD: ${{ secrets.EMAIL_PASSWORD }}
+        run: python worker.py
