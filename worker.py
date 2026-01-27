@@ -6,6 +6,42 @@ import os
 import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import datetime
+import pytz
+
+# --- NSE HOLIDAY LIST 2026 ---
+# Format: YYYY-MM-DD
+NSE_HOLIDAYS = [
+    "2026-01-26", # Republic Day
+    "2026-03-06", # Holi
+    "2026-03-27", # Ram Navami
+    "2026-04-02", # Mahavir Jayanti
+    "2026-04-03", # Good Friday
+    "2026-04-14", # Dr. Ambedkar Jayanti
+    "2026-05-01", # Maharashtra Day
+    "2026-08-15", # Independence Day
+    "2026-10-02", # Gandhi Jayanti
+    "2026-10-21", # Dussehra
+    "2026-11-09", # Diwali-Laxmi Pujan
+    "2026-12-25", # Christmas
+]
+
+def is_market_open():
+    """Checks if today is a weekday and not a NSE holiday"""
+    tz = pytz.timezone('Asia/Kolkata')
+    now = datetime.datetime.now(tz)
+    date_str = now.strftime('%Y-%m-%d')
+    
+    # Check Weekend (5 = Saturday, 6 = Sunday)
+    if now.weekday() >= 5:
+        return False, "Weekend"
+    
+    # Check Holiday List
+    if date_str in NSE_HOLIDAYS:
+        return False, f"NSE Holiday: {date_str}"
+    
+    return True, "Market Open"
+
 
 # --- LOGGING SETUP ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -80,7 +116,12 @@ SECTOR_MAP = {
 def run_scan():
     logger.info("Executing Full Multi-Table Scan...")
     scan_results = []
-    
+    open_status, reason = is_market_open()
+    if not open_status:
+        logger.info(f"Scan aborted: {reason}")
+        return # Stops the script here
+
+    logger.info("Starting Apex Sovereign Hourly Scan...")
     for sec, symbols in SECTOR_MAP.items():
         for s in symbols:
             try:
