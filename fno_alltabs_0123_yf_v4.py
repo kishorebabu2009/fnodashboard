@@ -7,35 +7,19 @@ import plotly.graph_objects as go
 import numpy as np
 import math
 import calendar
-import pytz
 from datetime import datetime, timedelta
 from streamlit_autorefresh import st_autorefresh
-from curl_cffi import requests as curl_requests
-
-# --- NEW SESSION LOGIC FOR 2026 YFINANCE ---
-if 'session' not in st.session_state:
-    # We use impersonate="chrome" to look exactly like a real browser
-    st.session_state.session = curl_requests.Session(impersonate="chrome")
-
-session = st.session_state.session
 
 # --- 1. CORE SYSTEM & THEME ---
 st.set_page_config(page_title="Apex Sovereign v170.0", layout="wide", page_icon="🏛️")
 st_autorefresh(interval=5 * 60 * 1000, key="apex_refresher")
 
-def get_last_tuesday(dt):
-    # Ensure dt is IST-aware
+def get_last_thursday(dt):
     last_day = calendar.monthrange(dt.year, dt.month)[1]
-    last_date = datetime(dt.year, dt.month, last_day, tzinfo=ist)
-    offset = (last_date.weekday() - 1) % 7
+    last_date = datetime(dt.year, dt.month, last_day)
+    offset = (last_date.weekday() - 1) % 7 #changed the offset here for tuesday
     res = last_date - timedelta(days=offset)
-    
-    # Check against current IST time
-    if res.date() < dt.date():
-        # If last Thursday of this month passed, get next month's
-        next_month = dt.replace(day=28) + timedelta(days=5)
-        return get_last_tuesday(next_month)
-    return res
+    return res if res >= dt.replace(hour=0, minute=0, second=0, microsecond=0) else get_last_thursday(dt + timedelta(days=10))
 
 # --- 2. DATA UTILITIES ---
 @st.cache_data(ttl=60)
@@ -44,7 +28,7 @@ def get_pulse():
     res = {}
     for n, s in idx.items():
         try:
-            d = yf.download(s, period="2d", interval="1d", progress=False, session=session)
+            d = yf.download(s, period="2d", interval="1d", progress=False)
             if not d.empty:
                 if isinstance(d.columns, pd.MultiIndex): d.columns = d.columns.get_level_values(0)
                 res[n] = (d['Close'].iloc[-1], ((d['Close'].iloc[-1]/d['Close'].iloc[-2])-1)*100)
@@ -52,19 +36,16 @@ def get_pulse():
     return res
 
 # --- 3. TOP BANNER ---
-pulse = get_pulse(); 
-ist = pytz.timezone('Asia/Kolkata')
-today = datetime.now(ist)
-exp_dt = get_last_tuesday(today)
+pulse = get_pulse(); today = datetime.now()
+exp_dt = get_last_thursday(today)
 b = st.columns(len(pulse) + 2)
 b[0].metric("🕒 CLOCK", today.strftime('%H:%M:%S'))
-b[1].metric("📅 EXPIRY", exp_dt.strftime('%d %b'), f"{(exp_dt.date() - today.date()).days}d")
+b[1].metric("📅 EXPIRY", exp_dt.strftime('%d %b'), f"{(exp_dt-today).days}d")
 for i, (name, (v, c)) in enumerate(pulse.items()):
     b[i+2].metric(name, f"{v:,.0f}" if "VIX" not in name else f"{v:.2f}", f"{c:+.2f}%")
 st.divider()
 
 if 'master_df' not in st.session_state: st.session_state.master_df = None
-if 'scan_active' not in st.session_state: st.session_state.scan_active = False
 if 'watchlist' not in st.session_state: st.session_state.watchlist = []
 
 # --- 4. SCANNER ENGINE ---
@@ -159,9 +140,9 @@ with st.sidebar:
         targets = [(s, sec) for sec in sel_sec for s in SECTOR_MAP[sec]]
         p_txt = st.empty()
         for i, (s, sec) in enumerate(targets):
-            # Pass the session here to avoid rate limits
-            d = yf.download(f"{s}.NS", period="1y", interval="1d", progress=False, session=session)
-            if not d.empty:
+            p_txt.info(f"[{i+1}/{len(targets)}] | `{s}` | {sec}")
+            d = yf.download(f"{s}.NS", period="1y", interval="1d", progress=False)
+            if not d.empty and len(d) > 100:
                 if isinstance(d.columns, pd.MultiIndex): d.columns = d.columns.get_level_values(0)
                 c, h, l, v = d['Close'], d['High'], d['Low'], d['Volume']
                 
@@ -386,60 +367,24 @@ if df is not None:
     with t[10]: # FLOWS
         st.plotly_chart(px.bar(df, x="Symbol", y="VFI", color="VFI", color_continuous_scale="RdYlGn"))
 
-    with t[11]: # TAB 11: DEEP DIVE
-        st.header("🔭 Asset DNA & Peer Intelligence")
+    with t[11]: # DEEP DIVE (Fundamentals + Peer Comparison)
+        dd_sel = st.selectbox("Deep Dive Target", df['Symbol'].unique())
+        tick = yf.Ticker(f"{dd_sel}.NS")
+        inf = tick.info
         
-        # 1. Target Selection
-        dd_sel = st.selectbox("Select Target Symbol", df['Symbol'].unique(), key="dd_search_key")
-        
-        # 2. Score Logic Breakdown (from existing Scan data)
-        row = df[df['Symbol'] == dd_sel].iloc[0]
-        
-        c1, c2, c3 = st.columns(3)
-        with c1:
-            st.metric("Technical Score", f"{row['SCORE']}/100")
-            st.write(f"**Trend:** {row['ST_Dir']}")
-        with c2:
-            st.metric("RSI (14D)", f"{row['RSI']:.2f}")
-            st.write(f"**ADX:** {row['ADX']:.2f}")
-        with c3:
-            st.metric("LTP", f"₹{row['LTP']}")
-            st.write(f"**Logic:** {row['CONTRIB']}")
+        d1, d2 = st.columns([1, 2])
+        with d1:
+            st.metric("Market Cap", f"₹{inf.get('marketCap', 0)//10**7:,.0f} Cr")
+            st.metric("P/E Ratio", f"{inf.get('trailingPE', 'N/A'):,.2f}")
+            st.metric("Beta", f"{inf.get('beta', 'N/A'):,.2f}")
+        with d2:
+            st.subheader(inf.get('longName', dd_sel))
+            st.write(inf.get('longBusinessSummary', 'N/A')[:600] + "...")
+            st.write("---")
+            st.subheader("👥 Sector Peer Comparison")
+            peers = df[df['Sector'] == df[df['Symbol'] == dd_sel]['Sector'].values[0]]
+            st.dataframe(peers[['Symbol', 'SCORE', 'LTP', 'CHG', 'RSI']], hide_index=True)
 
-        st.divider()
-
-        # 3. Fundamentals (Wrapped in a button to prevent Rate Limits)
-        if st.button(f"🔍 Fetch Deep Fundamentals for {dd_sel}"):
-            try:
-                with st.spinner("Accessing Yahoo Finance..."):
-                    # Use the session we defined earlier
-                    tick = yf.Ticker(f"{dd_sel}.NS", session=session)
-                    inf = tick.info
-                    
-                    f1, f2 = st.columns([1, 2])
-                    
-                    with f1:
-                        st.subheader("📊 Key Ratios")
-                        st.metric("Market Cap", f"₹{inf.get('marketCap', 0)//10**7:,.0f} Cr")
-                        st.metric("P/E Ratio", f"{inf.get('trailingPE', 'N/A')}")
-                        st.metric("P/B Ratio", f"{inf.get('priceToBook', 'N/A')}")
-                        st.metric("Beta", f"{inf.get('beta', 'N/A')}")
-                        st.metric("Div. Yield", f"{inf.get('dividendYield', 0)*100:.2f}%")
-                    
-                    with f2:
-                        st.subheader(f"Profile: {inf.get('longName', dd_sel)}")
-                        st.write(f"**Sector:** {inf.get('sector', 'N/A')} | **Industry:** {inf.get('industry', 'N/A')}")
-                        st.info(inf.get('longBusinessSummary', 'No summary available.')[:800] + "...")
-                        
-                        st.subheader("👥 Sector Peer Comparison")
-                        # Compare against other stocks in the same sector from our scan
-                        peers = df[df['Sector'] == row['Sector']]
-                        st.dataframe(peers[['Symbol', 'SCORE', 'LTP', 'CHG', 'RSI']], hide_index=True, use_container_width=True)
-
-            except Exception as e:
-                st.error("Rate Limit Error: Fundamentals are currently locked by Yahoo Finance. Please try again in 15 minutes.")
-                st.warning("Technicals and Charts in other tabs remain fully functional.")
-            
     with t[12]: # BACKTEST
         st.info("Strategy: SMA50 Trend Following")
         st.dataframe(df[['Symbol', 'ST_Dir', 'MA50', 'MA200']])
@@ -463,13 +408,3 @@ if df is not None:
 
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
-
-
-
-
-
-
-
-
-
-
