@@ -182,6 +182,7 @@ def run_scan():
 def send_email(df1, df2, df3, df4):
     try:
         sender, receiver, password = os.environ.get('EMAIL_SENDER'), os.environ.get('EMAIL_RECEIVER'), os.environ.get('EMAIL_PASSWORD')
+        receiver = [email.strip() for email in receiver.split(',')]
         msg = MIMEMultipart()
         msg['Subject'] = f"🚀 APEX ALERTS: {pd.Timestamp.now('Asia/Kolkata').strftime('%Y-%m-%d %H:%M')}"
         
@@ -210,7 +211,7 @@ def send_email(df1, df2, df3, df4):
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
             server.login(sender, password)
             server.sendmail(sender, receiver, msg.as_string())
-        logger.info("Email sent!")
+        logger.info(f"Email sent to {len(receiver_list)} recipients.")
     except Exception as e:
         logger.error(f"Failed: {e}")
 
