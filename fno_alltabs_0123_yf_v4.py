@@ -388,21 +388,60 @@ if df is not None:
     with t[10]: # FLOWS
         st.plotly_chart(px.bar(df, x="Symbol", y="VFI", color="VFI", color_continuous_scale="RdYlGn"))
 
-    with t[11]: # DEEP DIVE
-        dd_sel = st.selectbox("Select Target", df['Symbol'].unique(), key="dd_box")
-        # DO NOT CALL tick.info HERE AUTOMATICALLY
-        if st.button(f"🚀 Analyze {dd_sel} Fundamentals"):
-            try:
-                with st.spinner("Requesting data from Yahoo..."):
-                tick = yf.Ticker(f"{dd_sel}.NS", session=session)
-                inf = tick.info # This only runs if the button is clicked
-                
-                st.write(f"### {inf.get('longName', dd_sel)}")
-                st.metric("Market Cap", f"₹{inf.get('marketCap', 0)//10**7:,.0f} Cr")
-                # ... rest of your metrics
-            except Exception as e:
-                st.error("Rate limit active. Fundamentals are locked, but Technicals (Scan/Tactical) are still available.")
+    with t[11]: # TAB 11: DEEP DIVE
+        st.header("🔭 Asset DNA & Peer Intelligence")
+        
+        # 1. Target Selection
+        dd_sel = st.selectbox("Select Target Symbol", df['Symbol'].unique(), key="dd_search_key")
+        
+        # 2. Score Logic Breakdown (from existing Scan data)
+        row = df[df['Symbol'] == dd_sel].iloc[0]
+        
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.metric("Technical Score", f"{row['SCORE']}/100")
+            st.write(f"**Trend:** {row['ST_Dir']}")
+        with c2:
+            st.metric("RSI (14D)", f"{row['RSI']:.2f}")
+            st.write(f"**ADX:** {row['ADX']:.2f}")
+        with c3:
+            st.metric("LTP", f"₹{row['LTP']}")
+            st.write(f"**Logic:** {row['CONTRIB']}")
 
+        st.divider()
+
+        # 3. Fundamentals (Wrapped in a button to prevent Rate Limits)
+        if st.button(f"🔍 Fetch Deep Fundamentals for {dd_sel}"):
+            try:
+                with st.spinner("Accessing Yahoo Finance..."):
+                    # Use the session we defined earlier
+                    tick = yf.Ticker(f"{dd_sel}.NS", session=session)
+                    inf = tick.info
+                    
+                    f1, f2 = st.columns([1, 2])
+                    
+                    with f1:
+                        st.subheader("📊 Key Ratios")
+                        st.metric("Market Cap", f"₹{inf.get('marketCap', 0)//10**7:,.0f} Cr")
+                        st.metric("P/E Ratio", f"{inf.get('trailingPE', 'N/A')}")
+                        st.metric("P/B Ratio", f"{inf.get('priceToBook', 'N/A')}")
+                        st.metric("Beta", f"{inf.get('beta', 'N/A')}")
+                        st.metric("Div. Yield", f"{inf.get('dividendYield', 0)*100:.2f}%")
+                    
+                    with f2:
+                        st.subheader(f"Profile: {inf.get('longName', dd_sel)}")
+                        st.write(f"**Sector:** {inf.get('sector', 'N/A')} | **Industry:** {inf.get('industry', 'N/A')}")
+                        st.info(inf.get('longBusinessSummary', 'No summary available.')[:800] + "...")
+                        
+                        st.subheader("👥 Sector Peer Comparison")
+                        # Compare against other stocks in the same sector from our scan
+                        peers = df[df['Sector'] == row['Sector']]
+                        st.dataframe(peers[['Symbol', 'SCORE', 'LTP', 'CHG', 'RSI']], hide_index=True, use_container_width=True)
+
+            except Exception as e:
+                st.error("Rate Limit Error: Fundamentals are currently locked by Yahoo Finance. Please try again in 15 minutes.")
+                st.warning("Technicals and Charts in other tabs remain fully functional.")
+            
     with t[12]: # BACKTEST
         st.info("Strategy: SMA50 Trend Following")
         st.dataframe(df[['Symbol', 'ST_Dir', 'MA50', 'MA200']])
@@ -426,6 +465,7 @@ if df is not None:
 
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
+
 
 
 
