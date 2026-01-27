@@ -446,8 +446,15 @@ if df is not None:
         st.plotly_chart(px.treemap(df, path=['Sector', 'Symbol'], values='SCORE', color='CHG', color_continuous_scale='RdYlGn'))
 
     with t[14]: # ALERTS
-        st.warning("🚨 High Trend Intensity (ADX > 25)")
-        st.dataframe(df[df['ADX'] > 25][['Symbol', 'ADX', 'ST_Dir']])
+        st.subheader("🚨 High-Conviction Bullish Alerts")
+        # Multi-factor logic: RSI > 50, Price > MA20, Golden Cross (MA50 > MA200), Price > VWAP, and SuperTrend Bullish
+        alerts_df = df[(df['ADX'] > 30) & (df['RSI'] > 55) & (df['LTP'] > df['MA20'] > df['MA50'] > df['MA200']) & (df['LTP'] > df['Pivot']) & (df['LTP'] > df['VWAP']) & (df['ST_Dir'] == "BULL")]
+        
+        if not alerts_df.empty:
+            st.success(f"🔥 Found {len(alerts_df)} stocks meeting all technical criteria")
+            st.dataframe(alerts_df[['Symbol', 'LTP', 'VWAP', 'Pivot', 'SCORE', 'RSI', 'ADX', 'ST_Dir']], use_container_width=True, hide_index=True)
+        else:
+            st.info("No stocks currently meet the combined multi-factor criteria.")
 
     with t[15]: # SECTOR
         st.plotly_chart(px.sunburst(df, path=['Sector', 'Symbol'], values='SCORE'))
@@ -462,5 +469,6 @@ if df is not None:
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
     
+
 
 
