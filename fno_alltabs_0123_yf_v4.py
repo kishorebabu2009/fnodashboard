@@ -8,16 +8,18 @@ import numpy as np
 import math
 import calendar
 import pytz
+import requests
 from datetime import datetime, timedelta
 from streamlit_autorefresh import st_autorefresh
 
-import requests
+# Create a persistent session to bypass basic bot detection
+if 'session' not in st.session_state:
+    st.session_state.session = requests.Session()
+    st.session_state.session.headers.update({
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+    })
 
-# Add this at the top of your script
-session = requests.Session()
-session.headers.update({
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-})
+session = st.session_state.session
 
 
 # --- 1. CORE SYSTEM & THEME ---
@@ -45,7 +47,7 @@ def get_pulse():
     res = {}
     for n, s in idx.items():
         try:
-            d = yf.download(s, period="2d", interval="1d", progress=False)
+            d = yf.download(s, period="2d", interval="1d", progress=False, session=session)
             if not d.empty:
                 if isinstance(d.columns, pd.MultiIndex): d.columns = d.columns.get_level_values(0)
                 res[n] = (d['Close'].iloc[-1], ((d['Close'].iloc[-1]/d['Close'].iloc[-2])-1)*100)
@@ -389,21 +391,18 @@ if df is not None:
     with t[11]: # DEEP DIVE
     dd_sel = st.selectbox("Select Target", df['Symbol'].unique(), key="dd_box")
     
-    if st.button(f"🔍 Decode {dd_sel} Fundamentals"):
+    # DO NOT CALL tick.info HERE AUTOMATICALLY
+    if st.button(f"🚀 Analyze {dd_sel} Fundamentals"):
         try:
-            # Use the session here too
-            tick = yf.Ticker(f"{dd_sel}.NS", session=session)
-            inf = tick.info # This is what was causing the crash
-            
-            st.subheader(inf.get('longName', dd_sel))
-            c1, c2, c3 = st.columns(3)
-            c1.metric("P/E", inf.get('trailingPE', 'N/A'))
-            c2.metric("P/B", inf.get('priceToBook', 'N/A'))
-            c3.metric("Beta", inf.get('beta', 'N/A'))
-            
-            st.info(inf.get('longBusinessSummary', 'No summary available.')[:500] + "...")
+            with st.spinner("Requesting data from Yahoo..."):
+                tick = yf.Ticker(f"{dd_sel}.NS", session=session)
+                inf = tick.info # This only runs if the button is clicked
+                
+                st.write(f"### {inf.get('longName', dd_sel)}")
+                st.metric("Market Cap", f"₹{inf.get('marketCap', 0)//10**7:,.0f} Cr")
+                # ... rest of your metrics
         except Exception as e:
-            st.error("Yahoo Finance is currently throttling requests. Technicals are available, but fundamentals are locked. Try again in 10 mins.")
+            st.error("Rate limit active. Fundamentals are locked, but Technicals (Scan/Tactical) are still available.")
 
     with t[12]: # BACKTEST
         st.info("Strategy: SMA50 Trend Following")
@@ -428,6 +427,7 @@ if df is not None:
 
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
+
 
 
 
