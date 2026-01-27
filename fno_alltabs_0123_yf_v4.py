@@ -392,16 +392,16 @@ if df is not None:
         dd_sel = st.selectbox("Select Target", df['Symbol'].unique(), key="dd_box")
         # DO NOT CALL tick.info HERE AUTOMATICALLY
         if st.button(f"🚀 Analyze {dd_sel} Fundamentals"):
-        try:
-            with st.spinner("Requesting data from Yahoo..."):
+            try:
+                with st.spinner("Requesting data from Yahoo..."):
                 tick = yf.Ticker(f"{dd_sel}.NS", session=session)
                 inf = tick.info # This only runs if the button is clicked
                 
                 st.write(f"### {inf.get('longName', dd_sel)}")
                 st.metric("Market Cap", f"₹{inf.get('marketCap', 0)//10**7:,.0f} Cr")
                 # ... rest of your metrics
-        except Exception as e:
-            st.error("Rate limit active. Fundamentals are locked, but Technicals (Scan/Tactical) are still available.")
+            except Exception as e:
+                st.error("Rate limit active. Fundamentals are locked, but Technicals (Scan/Tactical) are still available.")
 
     with t[12]: # BACKTEST
         st.info("Strategy: SMA50 Trend Following")
@@ -426,6 +426,7 @@ if df is not None:
 
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
+
 
 
 
