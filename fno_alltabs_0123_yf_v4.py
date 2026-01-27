@@ -14,13 +14,20 @@ from streamlit_autorefresh import st_autorefresh
 st.set_page_config(page_title="Apex Sovereign v170.0", layout="wide", page_icon="🏛️")
 st_autorefresh(interval=5 * 60 * 1000, key="apex_refresher")
 
-def get_last_thursday(dt):
+def get_last_tuesday(dt):
+    # Ensure dt is IST-aware
     last_day = calendar.monthrange(dt.year, dt.month)[1]
-    last_date = datetime(dt.year, dt.month, last_day)
-    offset = (last_date.weekday() - 1) % 7 #changed the offset here for tuesday
+    last_date = datetime(dt.year, dt.month, last_day, tzinfo=ist)
+    offset = (last_date.weekday() - 1) % 7
     res = last_date - timedelta(days=offset)
-    return res if res >= dt.replace(hour=0, minute=0, second=0, microsecond=0) else get_last_thursday(dt + timedelta(days=10))
-
+    
+    # Check against current IST time
+    if res.date() < dt.date():
+        # If last Thursday of this month passed, get next month's
+        next_month = dt.replace(day=28) + timedelta(days=5)
+        return get_last_tuesday(next_month)
+    return res
+    
 # --- 2. DATA UTILITIES ---
 @st.cache_data(ttl=60)
 def get_pulse():
@@ -36,11 +43,13 @@ def get_pulse():
     return res
 
 # --- 3. TOP BANNER ---
-pulse = get_pulse(); today = datetime.now()
-exp_dt = get_last_thursday(today)
+pulse = get_pulse(); 
+ist = pytz.timezone('Asia/Kolkata')
+today = datetime.now(ist)
+exp_dt = get_last_tuesday(today)
 b = st.columns(len(pulse) + 2)
 b[0].metric("🕒 CLOCK", today.strftime('%H:%M:%S'))
-b[1].metric("📅 EXPIRY", exp_dt.strftime('%d %b'), f"{(exp_dt-today).days}d")
+b[1].metric("📅 EXPIRY", exp_dt.strftime('%d %b'), f"{(exp_dt.date() - today_ist.date()).days}d")
 for i, (name, (v, c)) in enumerate(pulse.items()):
     b[i+2].metric(name, f"{v:,.0f}" if "VIX" not in name else f"{v:.2f}", f"{c:+.2f}%")
 st.divider()
@@ -408,3 +417,4 @@ if df is not None:
 
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
+
