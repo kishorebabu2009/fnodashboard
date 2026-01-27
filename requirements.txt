@@ -3,4 +3,5 @@ pandas
 pandas_ta
 yfinance
 plotly
+pytz
 streamlit-autorefresh
