@@ -2,4 +2,3 @@ yfinance
 pandas==2.2.2
 numpy
 pytz
-https://github.com/twopirllc/pandas-ta/tarball/master
