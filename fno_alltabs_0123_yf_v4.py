@@ -448,7 +448,7 @@ if df is not None:
     with t[14]: # ALERTS
         st.subheader("🚨 High-Conviction Bullish Alerts")
         # Multi-factor logic: RSI > 50, Price > MA20, Golden Cross (MA50 > MA200), Price > VWAP, and SuperTrend Bullish
-        alerts_df = df[(df['ADX'] > 30) & (df['RSI'] > 55) & (df['LTP'] > df['MA20'] > df['MA50'] > df['MA200']) & (df['LTP'] > df['Pivot']) & (df['LTP'] > df['VWAP']) & (df['ST_Dir'] == "BULL")]
+        alerts_df = df[(df['ADX'] > 30) & (df['RSI'] > 55) & (df['LTP'] > df['MA20']) & (df['MA20'] > df['MA50']) & (df['MA50'] > df['MA200']) & (df['LTP'] > df['Pivot']) & (df['LTP'] > df['VWAP']) & (df['ST_Dir'] == "BULL")]
         
         if not alerts_df.empty:
             st.success(f"🔥 Found {len(alerts_df)} stocks meeting all technical criteria")
@@ -469,6 +469,7 @@ if df is not None:
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
     
+
 
 
 
