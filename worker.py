@@ -196,7 +196,7 @@ def send_email(df1, df2, df3, df4):
             <div style="background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); padding: 20px; border-radius: 10px; text-align: center; color: white;">
                 <h2 style="margin: 0;">Sovereign Winner</h2>
                 <h1 style="font-size: 40px; margin: 10px 0;">{df3['Symbol']}</h1>
-                <p style="font-size: 18px;">Score: <b>{df3['SCORE']}</b> | LTP: ₹{df3['LTP']} ({df3['CHG%']}%)</p>
+                <p style="font-size: 18px;">Score: <b>{df3['SCORE']}</b> | LTP: ₹{df3['LTP']} ({df3['Change%']}%)</p>
             </div>
             <h3 style="margin-top: 25px;">📈 Top Runners Up</h3>
             {df4.to_html(index=False, border=0, style="width: 100%; border-collapse: collapse; text-align: left;") if not df4.empty else "<p>No runners up.</p>"}
