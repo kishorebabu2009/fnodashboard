@@ -1,16 +1,62 @@
 import yfinance as yf
 import pandas as pd
-import pandas_ta as ta
+import numpy as np
 import smtplib
 import os
-import logging  # Added missing import
+import logging
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-# --- CONFIGURATION & LOGGING ---
+# --- LOGGING SETUP ---
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
 
+def calculate_indicators(df):
+    """Manual technical indicator math (No-Dependency Mode)"""
+    c, h, l, v = df['Close'], df['High'], df['Low'], df['Volume']
+    
+    # Moving Averages
+    ma20 = c.rolling(20).mean()
+    ma50 = c.rolling(50).mean()
+    ma200 = c.rolling(200).mean()
+    
+    # RSI
+    delta = c.diff()
+    gain = (delta.where(delta > 0, 0)).rolling(14).mean()
+    loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
+    rsi = 100 - (100 / (1 + (gain / loss)))
+    
+    # VWAP
+    vwap = (((h + l + c) / 3) * v).rolling(14).sum() / v.rolling(14).sum()
+    
+    # ADX (Simplified Directional Movement)
+    tr = pd.concat([h - l, (h - c.shift()).abs(), (l - c.shift()).abs()], axis=1).max(axis=1)
+    atr = tr.rolling(14).mean()
+    plus_dm = (h.diff().where((h.diff() > l.diff().abs()) & (h.diff() > 0), 0)).rolling(14).mean()
+    minus_dm = (l.diff().abs().where((l.diff().abs() > h.diff()) & (l.diff().abs() > 0), 0)).rolling(14).mean()
+    adx = 100 * (plus_dm - minus_dm).abs() / (plus_dm + minus_dm)
+    
+    # SuperTrend
+    hl2 = (h + l) / 2
+    upper_band = hl2 + (3 * atr)
+    lower_band = hl2 - (3 * atr)
+    st_dir = [True] * len(df)
+    for i in range(1, len(df)):
+        if c.iloc[i] > upper_band.iloc[i-1]: st_dir[i] = True
+        elif c.iloc[i] < lower_band.iloc[i-1]: st_dir[i] = False
+        else: st_dir[i] = st_dir[i-1]
+        
+    # CPR Logic
+    ph, pl, pc = h.iloc[-2], l.iloc[-2], c.iloc[-2]
+    pivot = (ph + pl + pc) / 3
+    
+    return {
+        'ma20': ma20.iloc[-1], 'ma50': ma50.iloc[-1], 'ma200': ma200.iloc[-1],
+        'rsi': rsi.iloc[-1], 'vwap': vwap.iloc[-1], 'adx': adx.iloc[-1],
+        'st_bull': st_dir[-1], 'pivot': pivot, 'ltp': c.iloc[-1]
+    }
+
+# --- SECTOR MAP ---
 SECTOR_MAP = {
     "BANKING": ["HDFCBANK", "ICICIBANK", "SBIN", "AXISBANK", "KOTAKBANK", "BANKBARODA", "PNB", "AUBANK", "FEDERALBNK", "IDFCFIRSTB", "BANDHANBNK", "INDUSINDBK", "BANKINDIA", "CANBK", "IDBI", "CENTRALBK", "IOB", "UCOBANK"],
     "IT": ["TCS", "INFY", "HCLTECH", "WIPRO", "LTIM", "TECHM", "COFORGE", "PERSISTENT", "MPHASIS", "KPITTECH", "TATAELXSI", "LTTS", "BSOFT", "CYIENT", "TATATECH", "KFINTECH", "ORACLE"],
@@ -27,96 +73,70 @@ SECTOR_MAP = {
 }
 
 def run_scan():
-    logger.info("Starting Apex Sovereign Hourly Scan...")
-    results = []
+    logger.info("Executing Full Multi-Table Scan...")
+    scan_results = []
+    
     for sec, symbols in SECTOR_MAP.items():
         for s in symbols:
             try:
                 d = yf.download(f"{s}.NS", period="1y", interval="1d", progress=False)
-                if not d.empty and len(d) > 100:
-                    # Fix for MultiIndex columns in newer yfinance versions
-                    if isinstance(d.columns, pd.MultiIndex): d.columns = d.columns.get_level_values(0)
-                    
-                    c, h, l, v = d['Close'], d['High'], d['Low'], d['Volume']
-                    
-                    # Indicators
-                    ma20, ma50, ma200 = ta.sma(c, 20), ta.sma(c, 50), ta.sma(c, 200)
-                    rsi = ta.rsi(c, 14)
-                    atr = ta.atr(h, l, c, 14)
-                    vwap = (((h + l + c) / 3) * v).rolling(14).sum() / v.rolling(14).sum()
-                    adx = ta.adx(h, l, c)
-                    st_df = ta.supertrend(h, l, c, 7, 3)
-                    
-                    # CPR Logic
-                    ph, pl, pc = h.iloc[-2], l.iloc[-2], c.iloc[-2]
-                    pivot = (ph + pl + pc) / 3
-                    bc = (ph + pl) / 2
-                    tc = (pivot - bc) + pivot
-                    
-                    # Scoring
-                    curr_c = float(c.iloc[-1])
-                    s1 = 0
-                    if curr_c > ma20.iloc[-1]: s1 += 10
-                    if curr_c > ma50.iloc[-1]: s1 += 10
-                    if curr_c > ma200.iloc[-1]: s1 += 10
-                    if ma20.iloc[-1] > ma50.iloc[-1] > ma200.iloc[-1]: s1 += 10
-                    
-                    s2 = 0
-                    curr_rsi = rsi.iloc[-1]
-                    if 55 <= curr_rsi <= 70: s2 = 30
-                    elif curr_rsi > 75: s2 = 15
-                    elif 45 <= curr_rsi < 55: s2 = 15
-                    
-                    s3 = 0
-                    curr_adx = adx.iloc[-1, 0]
-                    is_bull_st = (st_df is not None and st_df.iloc[-1, 1] > 0)
-                    if curr_c > vwap.iloc[-1]: s3 += 5
-                    if is_bull_st: s3 += 5
-                    if curr_adx > 25: s3 += 15
-                    
-                    vol_ma20 = v.rolling(20).mean().iloc[-1]
-                    s4 = 10 if v.iloc[-1] > (vol_ma20 * 1.5) else 0
-
-                    final_score = min(s1 + s2 + s3 + s4, 100)
-                    contrib_msg = f"Trend:{s1}|RSI:{s2}|Intensity:{s3}|Vol:{s4}"
-                    
-                    results.append({
-                        'Symbol': s, 'Sector': sec, 'SCORE': final_score, 'LTP': round(curr_c, 2),
-                        'CHG': round(((c.iloc[-1]/c.iloc[-2])-1)*100,2), 'RSI': round(curr_rsi,2), 
-                        'ADX': round(curr_adx,2), 'ST_Dir': "BULL" if is_bull_st else "BEAR",
-                        'Pivot': round(pivot,2), 'VWAP': round(vwap.iloc[-1],2), 'CONTRIB': contrib_msg
-                    })
+                if d.empty or len(d) < 150: continue
+                
+                if isinstance(d.columns, pd.MultiIndex): d.columns = d.columns.get_level_values(0)
+                
+                ind = calculate_indicators(d)
+                
+                # --- SCORING ---
+                s1 = 0
+                if ind['ltp'] > ind['ma20']: s1 += 10
+                if ind['ltp'] > ind['ma50']: s1 += 10
+                if ind['ltp'] > ind['ma200']: s1 += 10
+                if ind['ma20'] > ind['ma50'] > ind['ma200']: s1 += 10
+                
+                s2 = 30 if (55 <= ind['rsi'] <= 70) else 15
+                s3 = 20 if (ind['st_bull'] and ind['ltp'] > ind['vwap']) else 0
+                s4 = 10 if (ind['adx'] > 25) else 0
+                
+                final_score = min(s1 + s2 + s3 + s4, 100)
+                
+                scan_results.append({
+                    'Symbol': s, 'Sector': sec, 'LTP': round(ind['ltp'], 2),
+                    'SCORE': final_score, 'RSI': round(ind['rsi'], 2),
+                    'ADX': round(ind['adx'], 2), 'ST_Dir': "BULL" if ind['st_bull'] else "BEAR",
+                    'Above_Pivot': ind['ltp'] > ind['pivot'], 'Above_MA20': ind['ltp'] > ind['ma20']
+                })
             except Exception as e:
-                logger.error(f"Error scanning {s}: {e}")
+                logger.debug(f"Error {s}: {e}")
 
-    df = pd.DataFrame(results)
+    df = pd.DataFrame(scan_results)
     if not df.empty:
-        score_100 = df[df['SCORE'] >= 100]
-        high_conviction = df[(df['ADX'] > 30) & (df['RSI'] > 55) & (df['ST_Dir'] == "BULL")]
+        # Table 1: Score 100 Wall
+        score_100 = df[df['SCORE'] >= 100][['Symbol', 'Sector', 'LTP', 'SCORE']]
+        
+        # Table 2: High Conviction (Strict Filters)
+        high_conviction = df[
+            (df['ADX'] > 25) & (df['RSI'] > 50) & 
+            (df['Above_MA20'] == True) & (df['ST_Dir'] == "BULL") & 
+            (df['Above_Pivot'] == True)
+        ][['Symbol', 'LTP', 'RSI', 'ADX']]
         
         if not score_100.empty or not high_conviction.empty:
-            logger.info(f"Criteria met. Score 100: {len(score_100)}, High Conviction: {len(high_conviction)}")
             send_email(score_100, high_conviction)
-        else:
-            logger.info("No stocks met high-score criteria this hour.")
 
 def send_email(df1, df2):
     try:
-        sender = os.environ.get('EMAIL_SENDER')
-        receiver = os.environ.get('EMAIL_RECEIVER')
-        password = os.environ.get('EMAIL_PASSWORD')
-
+        sender, receiver, password = os.environ.get('EMAIL_SENDER'), os.environ.get('EMAIL_RECEIVER'), os.environ.get('EMAIL_PASSWORD')
         msg = MIMEMultipart()
-        msg['Subject'] = f"🚀 APEX ALERTS: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M')}"
+        msg['Subject'] = f"🚀 APEX ALERTS: {pd.Timestamp.now('Asia/Kolkata').strftime('%Y-%m-%d %H:%M')}"
         
         html = f"""
         <html>
-          <body>
+          <body style="font-family: Arial, sans-serif;">
             <h2 style="color: #FF4B4B;">🏆 SCORE 100 WALL</h2>
-            {df1[['Symbol', 'Sector', 'LTP', 'SCORE', 'CONTRIB']].to_html(index=False)}
+            {df1.to_html(index=False) if not df1.empty else "<p>No Score 100 stocks.</p>"}
             <hr>
             <h2 style="color: #00CC66;">🚨 HIGH CONVICTION ALERTS</h2>
-            {df2[['Symbol', 'LTP', 'RSI', 'ST_Dir']].to_html(index=False)}
+            {df2.to_html(index=False) if not df2.empty else "<p>No High Conviction alerts.</p>"}
           </body>
         </html>
         """
@@ -124,9 +144,10 @@ def send_email(df1, df2):
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
             server.login(sender, password)
             server.sendmail(sender, receiver, msg.as_string())
-        logger.info("Email sent successfully!")
+        logger.info("Email sent!")
     except Exception as e:
-        logger.error(f"Email failed: {e}")
+        logger.error(f"Failed: {e}")
 
 if __name__ == "__main__":
     run_scan()
+
