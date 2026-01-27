@@ -7,6 +7,7 @@ import plotly.graph_objects as go
 import numpy as np
 import math
 import calendar
+import pytz
 from datetime import datetime, timedelta
 from streamlit_autorefresh import st_autorefresh
 
@@ -417,4 +418,5 @@ if df is not None:
 
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
+
 
