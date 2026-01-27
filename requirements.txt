@@ -4,4 +4,7 @@ pandas_ta
 yfinance
 plotly
 pytz
+yfinance>=0.2.50
+curl_cffi
 streamlit-autorefresh
+
