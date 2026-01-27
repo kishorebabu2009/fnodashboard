@@ -18,10 +18,9 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
-          # We lock pandas to 2.2.2 because pandas_ta is incompatible with pandas 3.0+
           pip install yfinance pandas==2.2.2 pytz numpy plotly
-          # Install pandas_ta directly from GitHub using a format that avoids the 404/Username errors
-          pip install https://github.com/twopirllc/pandas-ta/tarball/master
+          # This link is currently the most stable for GitHub Actions
+          pip install https://github.com/twopirllc/pandas-ta/archive/refs/heads/master.zip
       - name: Execute Scan
         env:
           EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
