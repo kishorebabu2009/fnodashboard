@@ -8,19 +8,16 @@ import numpy as np
 import math
 import calendar
 import pytz
-import requests
 from datetime import datetime, timedelta
 from streamlit_autorefresh import st_autorefresh
+from curl_cffi import requests as curl_requests
 
-# Create a persistent session to bypass basic bot detection
+# --- NEW SESSION LOGIC FOR 2026 YFINANCE ---
 if 'session' not in st.session_state:
-    st.session_state.session = requests.Session()
-    st.session_state.session.headers.update({
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    })
+    # We use impersonate="chrome" to look exactly like a real browser
+    st.session_state.session = curl_requests.Session(impersonate="chrome")
 
 session = st.session_state.session
-
 
 # --- 1. CORE SYSTEM & THEME ---
 st.set_page_config(page_title="Apex Sovereign v170.0", layout="wide", page_icon="🏛️")
@@ -465,6 +462,7 @@ if df is not None:
 
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
+
 
 
 
