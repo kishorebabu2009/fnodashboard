@@ -13,7 +13,7 @@ from streamlit_autorefresh import st_autorefresh
 
 # --- 1. CORE SYSTEM & THEME ---
 st.set_page_config(page_title="Apex Sovereign v170.0", layout="wide", page_icon="🏛️")
-st_autorefresh(interval=5 * 60 * 1000, key="apex_refresher")
+st_autorefresh(interval=1 * 60 * 1000, key="apex_refresher")
 
 def get_last_tuesday(dt):
     # Ensure dt is IST-aware
@@ -32,17 +32,46 @@ def get_last_tuesday(dt):
 # --- 2. DATA UTILITIES ---
 @st.cache_data(ttl=60)
 def get_pulse():
-    idx = {"NIFTY": "^NSEI", "BANKNIFTY": "^NSEBANK", "FINNIFTY": "NIFTY_FIN_SERVICE.NS", "SENSEX": "^BSESN", "VIX": "^INDIAVIX"}
+    # Corrected Tickers: Use .NS for indices where ^ is unreliable
+    idx = {
+        "NIFTY": "^NSEI", 
+        "BANKNIFTY": "^NSEBANK", 
+        "FINNIFTY": "NIFTY-FIN-SERVICE.NS", # Fixed suffix
+        "SENSEX": "^BSESN", 
+        "VIX": "^INDIAVIX"
+    }
     res = {}
-    for n, s in idx.items():
-        try:
-            d = yf.download(s, period="2d", interval="1d", progress=False)
-            if not d.empty:
-                if isinstance(d.columns, pd.MultiIndex): d.columns = d.columns.get_level_values(0)
-                res[n] = (d['Close'].iloc[-1], ((d['Close'].iloc[-1]/d['Close'].iloc[-2])-1)*100)
-        except: res[n] = (0,0)
-    return res
+    
+    # Download all at once for speed and reliability
+    tickers_list = list(idx.values())
+    try:
+        data = yf.download(tickers_list, period="5d", interval="1d", progress=False)
+        
+        # Flatten MultiIndex if necessary
+        if isinstance(data.columns, pd.MultiIndex):
+            close_data = data['Close']
+        else:
+            close_data = data[['Close']]
 
+        for name, ticker in idx.items():
+            if ticker in close_data.columns:
+                # Get the last two valid non-NaN prices
+                series = close_data[ticker].dropna()
+                if len(series) >= 2:
+                    current_price = series.iloc[-1]
+                    prev_price = series.iloc[-2]
+                    change_pct = ((current_price / prev_price) - 1) * 100
+                    res[name] = (current_price, change_pct)
+                else:
+                    res[name] = (0, 0)
+            else:
+                res[name] = (0, 0)
+    except Exception as e:
+        st.sidebar.error(f"Pulse Error: {e}")
+        # Fallback to zeros
+        for name in idx.keys(): res[name] = (0, 0)
+        
+    return res
 # --- 3. TOP BANNER ---
 pulse = get_pulse(); 
 ist = pytz.timezone('Asia/Kolkata')
@@ -418,6 +447,5 @@ if df is not None:
 
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
-
-
+    
 
