@@ -5,6 +5,9 @@ import smtplib
 import os
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+# --- CONFIGURATION & LOGGING ---
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger()
 
 # Use the exact SECTOR_MAP from your original code
 SECTOR_MAP = {
@@ -66,6 +69,7 @@ SECTOR_MAP = {
 }
 
 def run_scan():
+    logger.info("Starting Apex Sovereign Hourly Scan...")
     results = []
     # Loop through symbols just like your 'EXECUTE FULL SCAN' logic
     for sec, symbols in SECTOR_MAP.items():
@@ -141,7 +145,8 @@ def run_scan():
                     'ST_Dir': "BULL" if is_bull_st else "BEAR", 'VFI': round((v.iloc[-1]/v.rolling(20).mean().iloc[-1]),2),
                     'CONTRIB': contrib_msg
                 })
-            except: continue
+            except Exception as e:
+                logger.error(f"Error scanning {s}: {e}")
 
     df = pd.DataFrame(results)
     
@@ -150,33 +155,40 @@ def run_scan():
     high_conviction = df[(df['ADX'] > 30) & (df['RSI'] > 55) & (df['LTP'] > df['MA20']) & (df['MA50'] > df['MA200']) & (df['LTP'] > df['Pivot']) & (df['LTP'] > df['VWAP']) & (df['ST_Dir'] == "BULL")]
     
     if not score_100.empty or not high_conviction.empty:
+        logger.info(f"Found {len(top_picks)} top picks. Sending email...")
         send_email(score_100, high_conviction)
+    else:
+        logger.warning("No stocks met the criteria this hour.")
 
 def send_email(df1, df2):
-    sender = os.environ.get('EMAIL_SENDER')
-    receiver = os.environ.get('EMAIL_RECEIVER')
-    password = os.environ.get('EMAIL_PASSWORD') # Gmail App Password
+    try:
+        sender = os.environ.get('EMAIL_SENDER')
+        receiver = os.environ.get('EMAIL_RECEIVER')
+        password = os.environ.get('EMAIL_PASSWORD') # Gmail App Password
 
-    msg = MIMEMultipart()
-    msg['Subject'] = f"🚀 APEX ALERTS: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M')}"
+        msg = MIMEMultipart()
+        msg['Subject'] = f"🚀 APEX ALERTS: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M')}"
     
-    html = f"""
-    <html>
-      <body style="font-family: Arial, sans-serif;">
-        <h2 style="color: #FF4B4B;">🏆 SCORE 100 WALL</h2>
-        {df1.to_html(index=False, border=0, classes='table')}
-        <hr>
-        <h2 style="color: #00CC66;">🚨 HIGH CONVICTION ALERTS</h2>
-        <p>Criteria: RSI>50, Price>MA20, Golden Cross, Price>VWAP, SuperTrend Bullish</p>
-        {df2[['Symbol', 'LTP', 'RSI']].to_html(index=False, border=0)}
-      </body>
-    </html>
-    """
-    msg.attach(MIMEText(html, 'html'))
+        html = f"""
+        <html>
+          <body style="font-family: Arial, sans-serif;">
+            <h2 style="color: #FF4B4B;">🏆 SCORE 100 WALL</h2>
+            {df1.to_html(index=False, border=0, classes='table')}
+            <hr>
+            <h2 style="color: #00CC66;">🚨 HIGH CONVICTION ALERTS</h2>
+            <p>Criteria: RSI>50, Price>MA20, Golden Cross, Price>VWAP, SuperTrend Bullish</p>
+            {df2[['Symbol', 'LTP', 'RSI']].to_html(index=False, border=0)}
+          </body>
+        </html>
+        """
+        msg.attach(MIMEText(html, 'html'))
     
-    with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
-        server.login(sender, password)
-        server.sendmail(sender, receiver, msg.as_string())
+        with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
+            server.login(sender, password)
+            server.sendmail(sender, receiver, msg.as_string())
+        logger.info("Email sent successfully!")
+    except Exception as e:
+        logger.error(f"Failed to send email: {e}")
 
 if __name__ == "__main__":
     run_scan()
