@@ -3,4 +3,3 @@ pandas==2.2.2
 pytz
 numpy
 plotly
-pandas_ta==0.3.14b
