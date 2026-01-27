@@ -166,11 +166,20 @@ def run_scan():
             (df['Above_MA20'] == True) & (df['ST_Dir'] == "BULL") & 
             (df['Above_Pivot'] == True)
         ][['Symbol', 'Sector', 'LTP', 'Change%', 'SCORE','RSI','ADX','ST_Dir','VWAP','Pivot','Above_Pivot']]
-        
-        if not score_100.empty or not high_conviction.empty:
-            send_email(score_100, high_conviction)
 
-def send_email(df1, df2):
+        # Table 3: 
+        # --- GET THE BEST STOCK ---
+        # Sort by Score first, then by Change %
+        best_stock = df.sort_values(by=['SCORE', 'Change%'], ascending=[False, False]).iloc[0]
+        
+        # Get Top 5 Runners up
+        runners_up = df[df['Symbol'] != best_stock['Symbol']].sort_values(by='SCORE', ascending=False).head(5)
+        
+        # Table 4: 
+        if not score_100.empty or not high_conviction.empty:
+            send_email(score_100, high_conviction,best_stock,runners_up)
+
+def send_email(df1, df2, df3, df4):
     try:
         sender, receiver, password = os.environ.get('EMAIL_SENDER'), os.environ.get('EMAIL_RECEIVER'), os.environ.get('EMAIL_PASSWORD')
         msg = MIMEMultipart()
@@ -179,11 +188,17 @@ def send_email(df1, df2):
         html = f"""
         <html>
           <body style="font-family: Arial, sans-serif;">
-            <h2 style="color: #FF4B4B;">🏆 SCORE 100 WALL</h2>
+            <h2 style="color: #FF4B4B;">🏆 Top SCORE Symbols</h2>
             {df1.to_html(index=False) if not df1.empty else "<p>No Score 100 stocks.</p>"}
             <hr>
             <h2 style="color: #00CC66;">🚨 HIGH CONVICTION ALERTS</h2>
             {df2.to_html(index=False) if not df2.empty else "<p>No High Conviction alerts.</p>"}
+            <hr>
+            <h2 style="color: #00CC66;"> Best Stock of the day</h2>
+            {df3.to_html(index=False) if not df3.empty else "<p>No Symbol found.</p>"}
+            <hr>
+            <h2 style="color: #00CC66;"> Runners up</h2>
+            {df4.to_html(index=False) if not df4.empty else "<p>No Symbols found.</p>"}
           </body>
         </html>
         """
