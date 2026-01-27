@@ -103,6 +103,7 @@ def run_scan():
                     'Symbol': s, 'Sector': sec, 'LTP': round(ind['ltp'], 2),
                     'SCORE': final_score, 'RSI': round(ind['rsi'], 2),
                     'ADX': round(ind['adx'], 2), 'ST_Dir': "BULL" if ind['st_bull'] else "BEAR",
+                    'VWAP': round(ind['vwap'],2),'Pivot': round(ind['pivot'],2),
                     'Above_Pivot': ind['ltp'] > ind['pivot'], 'Above_MA20': ind['ltp'] > ind['ma20']
                 })
             except Exception as e:
