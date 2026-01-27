@@ -11,11 +11,6 @@ import pytz
 from datetime import datetime, timedelta
 from streamlit_autorefresh import st_autorefresh
 
-
-
-# Update your metric display
-b[0].metric("🕒 IST CLOCK", today_ist.strftime('%H:%M:%S'))
-
 # --- 1. CORE SYSTEM & THEME ---
 st.set_page_config(page_title="Apex Sovereign v170.0", layout="wide", page_icon="🏛️")
 st_autorefresh(interval=5 * 60 * 1000, key="apex_refresher")
@@ -416,4 +411,5 @@ if df is not None:
 
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
+
 
