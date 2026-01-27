@@ -64,6 +64,7 @@ for i, (name, (v, c)) in enumerate(pulse.items()):
 st.divider()
 
 if 'master_df' not in st.session_state: st.session_state.master_df = None
+if 'scan_active' not in st.session_state: st.session_state.scan_active = False
 if 'watchlist' not in st.session_state: st.session_state.watchlist = []
 
 # --- 4. SCANNER ENGINE ---
@@ -462,6 +463,7 @@ if df is not None:
 
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
+
 
 
 
