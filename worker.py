@@ -211,7 +211,7 @@ def send_email(df1, df2, df3, df4):
         with smtplib.SMTP_SSL('smtp.gmail.com', 465) as server:
             server.login(sender, password)
             server.sendmail(sender, receiver, msg.as_string())
-        logger.info(f"Email sent to {len(receiver_list)} recipients.")
+        logger.info(f"Email sent to {len(receiver)} recipients.")
     except Exception as e:
         logger.error(f"Failed: {e}")
 
