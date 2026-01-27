@@ -18,9 +18,10 @@ jobs:
       - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
+          # Lock pandas to 2.2.2 to prevent technical indicator errors
           pip install yfinance pandas==2.2.2 pytz numpy plotly
-          # Use the unauthenticated raw zip link for the development branch
-          pip install https://github.com/twopirllc/pandas-ta/archive/development.zip
+          # Direct download link for the development branch ZIP
+          pip install https://github.com/twopirllc/pandas-ta/archive/refs/heads/development.zip
       - name: Execute Scan
         env:
           EMAIL_SENDER: ${{ secrets.EMAIL_SENDER }}
