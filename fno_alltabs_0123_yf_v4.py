@@ -408,22 +408,36 @@ if df is not None:
 
     with t[11]: # DEEP DIVE (Fundamentals + Peer Comparison)
         dd_sel = st.selectbox("Deep Dive Target", df['Symbol'].unique())
-        tick = yf.Ticker(f"{dd_sel}.NS")
-        inf = tick.info
         
-        d1, d2 = st.columns([1, 2])
-        with d1:
-            st.metric("Market Cap", f"₹{inf.get('marketCap', 0)//10**7:,.0f} Cr")
-            st.metric("P/E Ratio", f"{inf.get('trailingPE', 'N/A'):,.2f}")
-            st.metric("Beta", f"{inf.get('beta', 'N/A'):,.2f}")
-        with d2:
-            st.subheader(inf.get('longName', dd_sel))
-            st.write(inf.get('longBusinessSummary', 'N/A')[:600] + "...")
-            st.write("---")
-            st.subheader("👥 Sector Peer Comparison")
-            peers = df[df['Sector'] == df[df['Symbol'] == dd_sel]['Sector'].values[0]]
-            st.dataframe(peers[['Symbol', 'SCORE', 'LTP', 'CHG', 'RSI']], hide_index=True)
+        # Define a cached function to fetch info and handle rate limits
+        @st.cache_data(ttl=3600) # Cache for 1 hour to prevent re-triggering limits
+        def fetch_ticker_info(symbol):
+            try:
+                tick = yf.Ticker(f"{symbol}.NS")
+                return tick.info
+            except Exception as e:
+                return {"error": str(e)}
 
+        inf = fetch_ticker_info(dd_sel)
+        
+        if "error" in inf or not inf:
+            st.error("⚠️ Yahoo Finance Rate Limit reached. Fundamental data is temporarily unavailable.")
+            st.info("Try again in a few minutes. Technical scanning and charts will still work.")
+        else:
+            d1, d2 = st.columns([1, 2])
+            with d1:
+                st.metric("Market Cap", f"₹{inf.get('marketCap', 0)//10**7:,.0f} Cr")
+                st.metric("P/E Ratio", f"{inf.get('trailingPE', 'N/A')}")
+                st.metric("Beta", f"{inf.get('beta', 'N/A')}")
+            with d2:
+                st.subheader(inf.get('longName', dd_sel))
+                st.write(inf.get('longBusinessSummary', 'N/A')[:600] + "...")
+                st.write("---")
+                st.subheader("👥 Sector Peer Comparison")
+                sector_name = df[df['Symbol'] == dd_sel]['Sector'].values[0]
+                peers = df[df['Sector'] == sector_name]
+                st.dataframe(peers[['Symbol', 'SCORE', 'LTP', 'CHG', 'RSI']], hide_index=True)
+    
     with t[12]: # BACKTEST
         st.info("Strategy: SMA50 Trend Following")
         st.dataframe(df[['Symbol', 'ST_Dir', 'MA50', 'MA200']])
@@ -448,4 +462,5 @@ if df is not None:
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
     
+
 
