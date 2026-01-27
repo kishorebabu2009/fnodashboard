@@ -11,6 +11,15 @@ import pytz
 from datetime import datetime, timedelta
 from streamlit_autorefresh import st_autorefresh
 
+import requests
+
+# Add this at the top of your script
+session = requests.Session()
+session.headers.update({
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+})
+
+
 # --- 1. CORE SYSTEM & THEME ---
 st.set_page_config(page_title="Apex Sovereign v170.0", layout="wide", page_icon="🏛️")
 st_autorefresh(interval=5 * 60 * 1000, key="apex_refresher")
@@ -150,9 +159,9 @@ with st.sidebar:
         targets = [(s, sec) for sec in sel_sec for s in SECTOR_MAP[sec]]
         p_txt = st.empty()
         for i, (s, sec) in enumerate(targets):
-            p_txt.info(f"[{i+1}/{len(targets)}] | `{s}` | {sec}")
-            d = yf.download(f"{s}.NS", period="1y", interval="1d", progress=False)
-            if not d.empty and len(d) > 100:
+            # Pass the session here to avoid rate limits
+            d = yf.download(f"{s}.NS", period="1y", interval="1d", progress=False, session=session)
+            if not d.empty:
                 if isinstance(d.columns, pd.MultiIndex): d.columns = d.columns.get_level_values(0)
                 c, h, l, v = d['Close'], d['High'], d['Low'], d['Volume']
                 
@@ -377,23 +386,24 @@ if df is not None:
     with t[10]: # FLOWS
         st.plotly_chart(px.bar(df, x="Symbol", y="VFI", color="VFI", color_continuous_scale="RdYlGn"))
 
-    with t[11]: # DEEP DIVE (Fundamentals + Peer Comparison)
-        dd_sel = st.selectbox("Deep Dive Target", df['Symbol'].unique())
-        tick = yf.Ticker(f"{dd_sel}.NS")
-        inf = tick.info
-        
-        d1, d2 = st.columns([1, 2])
-        with d1:
-            st.metric("Market Cap", f"₹{inf.get('marketCap', 0)//10**7:,.0f} Cr")
-            st.metric("P/E Ratio", f"{inf.get('trailingPE', 'N/A'):,.2f}")
-            st.metric("Beta", f"{inf.get('beta', 'N/A'):,.2f}")
-        with d2:
+    with t[11]: # DEEP DIVE
+    dd_sel = st.selectbox("Select Target", df['Symbol'].unique(), key="dd_box")
+    
+    if st.button(f"🔍 Decode {dd_sel} Fundamentals"):
+        try:
+            # Use the session here too
+            tick = yf.Ticker(f"{dd_sel}.NS", session=session)
+            inf = tick.info # This is what was causing the crash
+            
             st.subheader(inf.get('longName', dd_sel))
-            st.write(inf.get('longBusinessSummary', 'N/A')[:600] + "...")
-            st.write("---")
-            st.subheader("👥 Sector Peer Comparison")
-            peers = df[df['Sector'] == df[df['Symbol'] == dd_sel]['Sector'].values[0]]
-            st.dataframe(peers[['Symbol', 'SCORE', 'LTP', 'CHG', 'RSI']], hide_index=True)
+            c1, c2, c3 = st.columns(3)
+            c1.metric("P/E", inf.get('trailingPE', 'N/A'))
+            c2.metric("P/B", inf.get('priceToBook', 'N/A'))
+            c3.metric("Beta", inf.get('beta', 'N/A'))
+            
+            st.info(inf.get('longBusinessSummary', 'No summary available.')[:500] + "...")
+        except Exception as e:
+            st.error("Yahoo Finance is currently throttling requests. Technicals are available, but fundamentals are locked. Try again in 10 mins.")
 
     with t[12]: # BACKTEST
         st.info("Strategy: SMA50 Trend Following")
@@ -418,6 +428,7 @@ if df is not None:
 
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
+
 
 
 
