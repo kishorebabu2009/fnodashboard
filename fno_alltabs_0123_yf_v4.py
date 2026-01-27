@@ -7,8 +7,14 @@ import plotly.graph_objects as go
 import numpy as np
 import math
 import calendar
+import pytz
 from datetime import datetime, timedelta
 from streamlit_autorefresh import st_autorefresh
+
+
+
+# Update your metric display
+b[0].metric("🕒 IST CLOCK", today_ist.strftime('%H:%M:%S'))
 
 # --- 1. CORE SYSTEM & THEME ---
 st.set_page_config(page_title="Apex Sovereign v170.0", layout="wide", page_icon="🏛️")
@@ -36,7 +42,9 @@ def get_pulse():
     return res
 
 # --- 3. TOP BANNER ---
-pulse = get_pulse(); today = datetime.now()
+pulse = get_pulse(); 
+ist = pytz.timezone('Asia/Kolkata')
+today = datetime.now(ist)
 exp_dt = get_last_thursday(today)
 b = st.columns(len(pulse) + 2)
 b[0].metric("🕒 CLOCK", today.strftime('%H:%M:%S'))
@@ -408,3 +416,4 @@ if df is not None:
 
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
+
