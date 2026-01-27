@@ -112,14 +112,14 @@ def run_scan():
     df = pd.DataFrame(scan_results)
     if not df.empty:
         # Table 1: Score 100 Wall
-        score_100 = df[df['SCORE'] >= 100][['Symbol', 'Sector', 'LTP', 'SCORE','RSI','ADX','ST_Dir','VWAP','Above_Pivot']]
+        score_100 = df[df['SCORE'] >= 85][['Symbol', 'Sector', 'LTP', 'SCORE','RSI','ADX','ST_Dir','VWAP','Pivot','Above_Pivot']]
         
         # Table 2: High Conviction (Strict Filters)
         high_conviction = df[
-            (df['ADX'] > 25) & (df['RSI'] > 50) & 
+            (df['ADX'] > 30) & (df['RSI'] > 60) & 
             (df['Above_MA20'] == True) & (df['ST_Dir'] == "BULL") & 
             (df['Above_Pivot'] == True)
-        ][['Symbol', 'Sector', 'LTP', 'SCORE','RSI','ADX','ST_Dir','VWAP','Above_Pivot']]
+        ][['Symbol', 'Sector', 'LTP', 'SCORE','RSI','ADX','ST_Dir','VWAP','Pivot','Above_Pivot']]
         
         if not score_100.empty or not high_conviction.empty:
             send_email(score_100, high_conviction)
