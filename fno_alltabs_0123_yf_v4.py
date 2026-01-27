@@ -389,10 +389,9 @@ if df is not None:
         st.plotly_chart(px.bar(df, x="Symbol", y="VFI", color="VFI", color_continuous_scale="RdYlGn"))
 
     with t[11]: # DEEP DIVE
-    dd_sel = st.selectbox("Select Target", df['Symbol'].unique(), key="dd_box")
-    
-    # DO NOT CALL tick.info HERE AUTOMATICALLY
-    if st.button(f"🚀 Analyze {dd_sel} Fundamentals"):
+        dd_sel = st.selectbox("Select Target", df['Symbol'].unique(), key="dd_box")
+        # DO NOT CALL tick.info HERE AUTOMATICALLY
+        if st.button(f"🚀 Analyze {dd_sel} Fundamentals"):
         try:
             with st.spinner("Requesting data from Yahoo..."):
                 tick = yf.Ticker(f"{dd_sel}.NS", session=session)
@@ -427,6 +426,7 @@ if df is not None:
 
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
+
 
 
 
