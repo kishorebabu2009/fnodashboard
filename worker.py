@@ -89,13 +89,13 @@ def run_scan():
                 # --- SCORING ---
                 s1 = 0
                 if ind['ltp'] > ind['ma20']: s1 += 10
-                if ind['ltp'] > ind['ma50']: s1 += 10
-                if ind['ltp'] > ind['ma200']: s1 += 10
-                if ind['ma20'] > ind['ma50'] > ind['ma200']: s1 += 10
+                if ind['ltp'] > ind['ma50']: s1 += 5
+                if ind['ltp'] > ind['ma200']: s1 += 5
+                if ind['ma20'] > ind['ma50'] > ind['ma200']: s1 += 20
                 
-                s2 = 30 if (55 <= ind['rsi'] <= 70) else 15
-                s3 = 20 if (ind['st_bull'] and ind['ltp'] > ind['vwap']) else 0
-                s4 = 10 if (ind['adx'] > 25) else 0
+                s2 = 20 if (55 <= ind['rsi'] <= 70) else 10
+                s3 = 20 if (ind['st_bull'] and ind['ltp'] > ind['vwap'] and ind['ltp'] > ind['pivot']) else 0
+                s4 = 10 if (ind['adx'] > 30) else 0
                 
                 final_score = min(s1 + s2 + s3 + s4, 100)
                 
@@ -111,14 +111,14 @@ def run_scan():
     df = pd.DataFrame(scan_results)
     if not df.empty:
         # Table 1: Score 100 Wall
-        score_100 = df[df['SCORE'] >= 100][['Symbol', 'Sector', 'LTP', 'SCORE']]
+        score_100 = df[df['SCORE'] >= 100][['Symbol', 'Sector', 'LTP', 'SCORE','RSI','ADX','ST_Dir','VWAP','Above_Pivot']]
         
         # Table 2: High Conviction (Strict Filters)
         high_conviction = df[
             (df['ADX'] > 25) & (df['RSI'] > 50) & 
             (df['Above_MA20'] == True) & (df['ST_Dir'] == "BULL") & 
             (df['Above_Pivot'] == True)
-        ][['Symbol', 'LTP', 'RSI', 'ADX']]
+        ][['Symbol', 'Sector', 'LTP', 'SCORE','RSI','ADX','ST_Dir','VWAP','Above_Pivot']]
         
         if not score_100.empty or not high_conviction.empty:
             send_email(score_100, high_conviction)
