@@ -8,8 +8,61 @@ from email.mime.text import MIMEText
 
 # Use the exact SECTOR_MAP from your original code
 SECTOR_MAP = {
-    "BANKING": ["HDFCBANK", "ICICIBANK", "SBIN", "AXISBANK", "KOTAKBANK"],
-    # ... (Include all other sectors from your file)
+    "BANKING": [
+        "HDFCBANK", "ICICIBANK", "SBIN", "AXISBANK", "KOTAKBANK", "BANKBARODA", 
+        "PNB", "AUBANK", "FEDERALBNK", "IDFCFIRSTB", "BANDHANBNK", "INDUSINDBK", 
+        "BANKINDIA", "CANBK", "IDBI", "CENTRALBK", "IOB", "UCOBANK"
+    ],
+    "IT": [
+        "TCS", "INFY", "HCLTECH", "WIPRO", "LTIM", "TECHM", "COFORGE", 
+        "PERSISTENT", "MPHASIS", "KPITTECH", "TATAELXSI", "LTTS", "BSOFT", 
+        "CYIENT", "TATATECH", "KFINTECH", "ORACLE"
+    ],
+    "FINANCE": [
+        "BAJFINANCE", "BAJAJFINSV", "CHOLAFIN", "RECLTD", "PFC", "MUTHOOTFIN", 
+        "SHRIRAMFIN", "M&MFIN", "LICI", "HDFCLIFE", "SBILIFE", "ICICIPRULI", 
+        "ICICIGI", "ABCAPITAL", "JIOFIN", "ANGELONE", "CDSL", "BSE", "CAMS", 
+        "POONAWALLA", "SAMMAANCAP", "IIFL", "HUDCO"
+    ],
+    "ENERGY/OIL": [
+        "RELIANCE", "NTPC", "ONGC", "POWERGRID", "BPCL", "HINDPETRO", "GAIL", 
+        "TATAPOWER", "JSWENERGY", "ADANIGREEN", "ADANIENSOL", "OIL", "PETRONET", 
+        "IGL", "MGL", "NHPC", "SJVN", "IREDA", "TORNTPOWER", "CESC"
+    ],
+    "AUTO": [
+        "TATAMOTORS", "M&M", "MARUTI", "BAJAJ-AUTO", "HEROMOTOCO", "TVSMOTOR", 
+        "EICHERMOT", "ASHOKLEY", "BHARATFORG", "BALKRISIND", "APOLLOTYRE", 
+        "MRF", "MOTHERSON", "SONACOMS", "UNOMINDA", "TINDIA"
+    ],
+    "CONSUMER": [
+        "HINDUNILVR", "ITC", "NESTLEIND", "BRITANNIA", "TATACONSUM", "VBL", 
+        "COLPAL", "DABUR", "GODREJCP", "MARICO", "UPL", "BALRAMCHIN", 
+        "JUBLFOOD", "KALYANKJIL", "TITAN", "TRENT", "PAGEIND", "METROBRAND"
+    ],
+    "METALS": [
+        "TATASTEEL", "JINDALSTEL", "JSWSTEEL", "HINDALCO", "VEDL", "NMDC", 
+        "NATIONALUM", "SAIL", "HINDZINC", "COALINDIA", "HINDCOPPER", "JSL"
+    ],
+    "HEALTHCARE": [
+        "SUNPHARMA", "CIPLA", "DRREDDY", "APOLLOHOSP", "DIVISLAB", "MAXHEALTH", 
+        "ZYDUSLIFE", "LUPIN", "AUROPHARMA", "ALKEM", "BIOCON", "GLENMARK", 
+        "GRANULES", "TORNTPHARM", "PPLPHARMA", "GLAND"
+    ],
+    "DEFENSE/INFRA": [
+        "LT", "ADANIENT", "ADANIPORTS", "AMBUJACEM", "ACC", "ULTRACEMCO", 
+        "BEL", "HAL", "BDL", "GRASIM", "CUMMINSIND", "ABB", "SIEMENS", 
+        "POLYCAB", "HAVELLS", "CONCOR", "MAZDOCK", "COCHINSHIP", "SOLARINDS"
+    ],
+    "REALTY": [
+        "DLF", "GODREJPROP", "LODHA", "PRESTIGE", "OBERREALTY", "IRB", "NBCC"
+    ],
+    "PLATFORMS/MISC": [
+        "ZOMATO", "SWIGGY", "NYKAA", "PAYTM", "PBSTECH", "DELHIVERY", 
+        "INDIAMART", "DIXON", "INDIGO", "IDEA", "MCX", "EXIDEIND", "ASTRAL"
+    ],
+    "CHEMICALS": [
+        "PIIND", "SRF", "DEEPAKNTR", "TATACHEM", "ATUL", "GUJGASLTD", "COROMANDEL"
+    ]
 }
 
 def run_scan():
