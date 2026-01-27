@@ -14,6 +14,11 @@ logger = logging.getLogger()
 def calculate_indicators(df):
     """Manual technical indicator math (No-Dependency Mode)"""
     c, h, l, v = df['Close'], df['High'], df['Low'], df['Volume']
+
+    # Price Change % calculation
+    prev_close = c.iloc[-2]
+    curr_close = c.iloc[-1]
+    price_chg_pct = ((curr_close - prev_close) / prev_close) * 100
     
     # Moving Averages
     ma20 = c.rolling(20).mean()
@@ -53,7 +58,7 @@ def calculate_indicators(df):
     return {
         'ma20': ma20.iloc[-1], 'ma50': ma50.iloc[-1], 'ma200': ma200.iloc[-1],
         'rsi': rsi.iloc[-1], 'vwap': vwap.iloc[-1], 'adx': adx.iloc[-1],
-        'st_bull': st_dir[-1], 'pivot': pivot, 'ltp': c.iloc[-1]
+        'st_bull': st_dir[-1], 'pivot': pivot, 'ltp': c.iloc[-1],'chg_pct': price_chg_pct
     }
 
 # --- SECTOR MAP ---
@@ -100,7 +105,7 @@ def run_scan():
                 final_score = min(s1 + s2 + s3 + s4, 100)
                 
                 scan_results.append({
-                    'Symbol': s, 'Sector': sec, 'LTP': round(ind['ltp'], 2),
+                    'Symbol': s, 'Sector': sec, 'LTP': round(ind['ltp'], 2), 'Change%': round(ind['chg_pct'],2),
                     'SCORE': final_score, 'RSI': round(ind['rsi'], 2),
                     'ADX': round(ind['adx'], 2), 'ST_Dir': "BULL" if ind['st_bull'] else "BEAR",
                     'VWAP': round(ind['vwap'],2),'Pivot': round(ind['pivot'],2),
@@ -112,14 +117,14 @@ def run_scan():
     df = pd.DataFrame(scan_results)
     if not df.empty:
         # Table 1: Score 100 Wall
-        score_100 = df[df['SCORE'] >= 85][['Symbol', 'Sector', 'LTP', 'SCORE','RSI','ADX','ST_Dir','VWAP','Pivot','Above_Pivot']]
+        score_100 = df[df['SCORE'] >= 85][['Symbol', 'Sector', 'LTP', 'Change%','SCORE','RSI','ADX','ST_Dir','VWAP','Pivot','Above_Pivot']]
         
         # Table 2: High Conviction (Strict Filters)
         high_conviction = df[
             (df['ADX'] > 30) & (df['RSI'] > 60) & 
             (df['Above_MA20'] == True) & (df['ST_Dir'] == "BULL") & 
             (df['Above_Pivot'] == True)
-        ][['Symbol', 'Sector', 'LTP', 'SCORE','RSI','ADX','ST_Dir','VWAP','Pivot','Above_Pivot']]
+        ][['Symbol', 'Sector', 'LTP', 'Change%', 'SCORE','RSI','ADX','ST_Dir','VWAP','Pivot','Above_Pivot']]
         
         if not score_100.empty or not high_conviction.empty:
             send_email(score_100, high_conviction)
