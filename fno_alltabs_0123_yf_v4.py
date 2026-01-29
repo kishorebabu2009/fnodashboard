@@ -36,7 +36,8 @@ def get_pulse():
     idx = {
         "NIFTY": "^NSEI", 
         "BANKNIFTY": "^NSEBANK", 
-        "FINNIFTY": "NIFTY-FIN-SERVICE.NS", # Fixed suffix
+        "FinNifty": "NIFTY_FIN_SERVICE.NS", 
+        "Midcap Select": "NIFTY_MID_SELECT.NS",
         "SENSEX": "^BSESN", 
         "VIX": "^INDIAVIX"
     }
@@ -471,6 +472,7 @@ if df is not None:
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
     
+
 
 
 
