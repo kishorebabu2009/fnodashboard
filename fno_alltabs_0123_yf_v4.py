@@ -79,6 +79,8 @@ ist = pytz.timezone('Asia/Kolkata')
 today = datetime.now(ist)
 exp_dt = get_last_tuesday(today)
 b = st.columns(len(pulse) + 2)
+weights = [3] + [1] * (len(pulse) + 1)
+b = st.columns(weights)
 b[0].metric("🕒 CLOCK", today.strftime('%d %b %Y, %H:%M:%S').upper())
 b[1].metric("📅 EXPIRY", exp_dt.strftime('%d %b'), f"{(exp_dt.date() - today.date()).days}d")
 for i, (name, (v, c)) in enumerate(pulse.items()):
@@ -472,6 +474,7 @@ if df is not None:
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
     
+
 
 
 
