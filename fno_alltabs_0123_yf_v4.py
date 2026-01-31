@@ -79,7 +79,7 @@ ist = pytz.timezone('Asia/Kolkata')
 today = datetime.now(ist)
 exp_dt = get_last_tuesday(today)
 b = st.columns(len(pulse) + 2)
-b[0].metric("🕒 CLOCK", today.strftime('%H:%M:%S'))
+b[0].metric("🕒 CLOCK", today.strftime('%d %b %Y, %H:%M:%S').upper())
 b[1].metric("📅 EXPIRY", exp_dt.strftime('%d %b'), f"{(exp_dt.date() - today.date()).days}d")
 for i, (name, (v, c)) in enumerate(pulse.items()):
     b[i+2].metric(name, f"{v:,.0f}" if "VIX" not in name else f"{v:.2f}", f"{c:+.2f}%")
@@ -472,6 +472,7 @@ if df is not None:
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
     
+
 
 
 
