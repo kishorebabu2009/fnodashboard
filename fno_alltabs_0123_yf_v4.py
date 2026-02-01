@@ -106,7 +106,7 @@ SECTOR_MAP = {
     ],
     "DEFENSE/INFRA": [
         "ABB", "ACC", "ADANIENT", "ADANIPORTS", "AMBUJACEM", "BDL", "BEL", 
-        "BHEL", "COCHINSHIP", "CONCOR", "CUMMINSIND", "GRASIM", "HAL", 
+        "BHEL", "COCHINSHIP", "CONCOR", "CUMMINSIND", "GMRAIRPORT", "GRASIM", "HAL", 
         "HAVELLS", "LT", "MAZDOCK", "POLYCAB", "RVNL", "SIEMENS", "SOLARINDS", 
         "ULTRACEMCO"
     ],
@@ -123,7 +123,7 @@ SECTOR_MAP = {
     ],
     "HEALTHCARE": [
         "ALKEM", "APOLLOHOSP", "AUROPHARMA", "BIOCON", "CIPLA", "DIVISLAB", 
-        "DRREDDY", "GLAND", "GLENMARK", "GRANULES", "LUPIN", "MAXHEALTH", 
+        "DRREDDY", "FORTIS", "GLAND", "GLENMARK", "GRANULES", "LUPIN", "MAXHEALTH", 
         "PPLPHARMA", "SUNPHARMA", "TORNTPHARM", "ZYDUSLIFE"
     ],
     "IT": [
@@ -136,8 +136,8 @@ SECTOR_MAP = {
         "NATIONALUM", "NMDC", "SAIL", "TATASTEEL", "VEDL"
     ],
     "PLATFORMS/MISC": [
-        "ASTRAL", "DELHIVERY", "DIXON", "EXIDEIND", "IDEA", "INDIGO", 
-        "INDIAMART", "MCX", "NYKAA", "PAYTM", "PBSTECH", "SWIGGY", "ZOMATO"
+        "ASTRAL","BHARTIARTL","DELHIVERY", "DIXON", "EXIDEIND", "IDEA", "INDIGO", 
+        "INDIAMART", "INDUSTOWER","MCX", "NYKAA", "PAYTM", "PBSTECH", "SWIGGY", "ZOMATO"
     ],
     "REALTY": [
         "DLF", "GODREJPROP", "IRB", "LODHA", "NBCC", "OBERREALTY", "PRESTIGE"
@@ -484,6 +484,7 @@ if df is not None:
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
     
+
 
 
 
