@@ -79,8 +79,6 @@ ist = pytz.timezone('Asia/Kolkata')
 today = datetime.now(ist)
 exp_dt = get_last_tuesday(today)
 b = st.columns(len(pulse) + 2)
-weights = [3] + [1] * (len(pulse) + 1)
-b = st.columns(weights)
 b[0].metric("🕒 CLOCK", today.strftime('%d %b %Y, %H:%M:%S').upper())
 b[1].metric("📅 EXPIRY", exp_dt.strftime('%d %b'), f"{(exp_dt.date() - today.date()).days}d")
 for i, (name, (v, c)) in enumerate(pulse.items()):
@@ -151,8 +149,25 @@ SECTOR_MAP = {
     ]
 }
 
+ist = pytz.timezone('Asia/Kolkata')
+today = datetime.now(ist)
+exp_dt = get_last_tuesday(today) # Assuming your helper function is defined
+
 with st.sidebar:
     st.header("⚙️ APEX COMMAND")
+    # Clock: Displays full Date and 24hr Time
+    st.metric(
+        label="🕒 CLOCK", 
+        value=today.strftime('%d %b %Y, %H:%M:%S').upper()
+    )
+    # Expiry: Displays Date with Days Remaining as the 'delta'
+    days_to_expiry = (exp_dt.date() - today.date()).days
+    st.metric(
+        label="📅 EXPIRY", 
+        value=exp_dt.strftime('%d %b').upper(), 
+        delta=f"{days_to_expiry} days"
+    )
+    st.divider()
     # --- FIX STARTS HERE ---
     if st.session_state.master_df is not None:
         # Check if master_df is populated and columns exist
@@ -474,6 +489,7 @@ if df is not None:
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
     
+
 
 
 
