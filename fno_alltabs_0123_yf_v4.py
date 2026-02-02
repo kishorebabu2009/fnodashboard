@@ -86,239 +86,73 @@ if 'watchlist' not in st.session_state: st.session_state.watchlist = []
 # --- 4. SCANNER ENGINE ---
 SECTOR_MAP = {
     "AUTO": [
-        "ASHOKLEY", 
-		"BAJAJ-AUTO", 
-		"BHARATFORG",
-		"EICHERMOT",
-		"HEROMOTOCO",
-		"M&M",
-		"MARUTI",
-		"MOTHERSON",
-		"SONACOMS",
-		"TVSMOTOR",
-		"TIINDIA",
-		"UNOMINDA"
+        "ASHOKLEY", "BAJAJ-AUTO", "BHARATFORG", "EICHERMOT", "HEROMOTOCO", 
+        "M&M", "MARUTI", "MOTHERSON", "SONACOMS", "TVSMOTOR", "TIINDIA", 
+        "UNOMINDA", "BOSCHLTD", "TMPV", "EXIDEIND"
     ],
     "BANKING": [
-        "AUBANK",
-		"AXISBANK",
-		"BANDHANBNK",
-		"BANKBARODA",
-		"BANKINDIA",
-		"CANBK",
-		"FEDERALBNK",
-		"HDFCBANK",
-		"ICICIBANK",
-		"IDFCFIRSTB",
-		"INDUSINDBK",
-		"KOTAKBANK",
-		"PNB",
-		"SBIN"
+        "AUBANK", "AXISBANK", "BANDHANBNK", "BANKBARODA", "BANKINDIA", 
+        "CANBK", "FEDERALBNK", "HDFCBANK", "ICICIBANK", "IDFCFIRSTB", 
+        "INDUSINDBK", "KOTAKBANK", "PNB", "SBIN", "INDIANB", "RBLBANK", 
+        "UNIONBANK", "YESBANK", "CENTRALBK", "IDBI", "IOB", "UCOBANK"
     ],
     "CHEMICALS": [
-        "PIIND", "SRF"
+        "PIIND", "SRF", "PIDILITIND", "ATUL", "COROMANDEL", "DEEPAKNTR", 
+        "GUJGASLTD", "TATACHEM", "GROWWCHEM"
     ],
-    "CONSUMER": [
-        "BRITANNIA",
-		"COLPAL",
-		"DABUR",
-		"GODREJCP",
-		"HINDUNILVR",
-		"ITC",
-		"IRCTC",
-		"JUBLFOOD",
-		"KALYANKJIL",
-		"MARICO",
-		"NESTLEIND",
-		"PAGEIND",
-		"TATACONSUM",
-		"TITAN",
-		"TRENT",
-		"UPL",
-		"VBL"
+    "CONSUMER_FMCG": [
+        "BRITANNIA", "COLPAL", "DABUR", "GODREJCP", "HINDUNILVR", "ITC", 
+        "MARICO", "NESTLEIND", "TATACONSUM", "VBL", "PATANJALI", "UNITDSPR"
+    ],
+    "CONSUMER_DURABLES": [
+        "AMBER", "BLUESTARCO", "CROMPTON", "DIXON", "HAVELLS", "VOLTAS", 
+        "TITAN", "KAYNES", "PGEL", "METROBRAND", "PAGEIND", "ASIANPAINT"
     ],
     "DEFENSE/INFRA": [
-        "ABB",
-		"ADANIENT",
-		"ADANIPORTS",
-		"AMBUJACEM",
-		"BDL",
-		"BEL",
-		"BHEL",
-		"CONCOR",
-		"CUMMINSIND",
-		"GMRAIRPORT",
-		"GRASIM",
-		"HAVELLS",
-		"HAL",
-		"LT",
-		"MAZDOCK",
-		"POLYCAB",
-		"RVNL",
-		"SIEMENS",
-		"SOLARINDS",
-		"ULTRACEMCO"
+        "ABB", "ADANIENT", "ADANIPORTS", "AMBUJACEM", "BDL", "BEL", "BHEL", 
+        "CONCOR", "CUMMINSIND", "GMRAIRPORT", "GRASIM", "HAL", "LT", 
+        "MAZDOCK", "POLYCAB", "RVNL", "SIEMENS", "SOLARINDS", "ULTRACEMCO", 
+        "CGPOWER", "DALBHARAT", "SHREECEM", "LTTS", "COCHINSHIP", "IRB"
     ],
     "ENERGY/OIL": [
-        "ADANIENSOL",
-		"ADANIGREEN",
-		"BPCL",
-		"GAIL",
-		"HINDPETRO",
-		"IREDA",
-		"JSWENERGY",
-		"NHPC",
-		"NTPC",
-		"ONGC",
-		"OIL",
-		"PETRONET",
-		"POWERGRID",
-		"PREMIERENE",
-		"RELIANCE",
-		"TATAPOWER",
-		"TORNTPOWER",
-		"WAAREEENER"
+        "ADANIENSOL", "ADANIGREEN", "BPCL", "GAIL", "HINDPETRO", "IREDA", 
+        "JSWENERGY", "NHPC", "NTPC", "ONGC", "OIL", "PETRONET", "POWERGRID", 
+        "PREMIERENE", "RELIANCE", "TATAPOWER", "TORNTPOWER", "WAAREEENER", 
+        "SUZLON", "INOXWIND", "IOC", "SJVN"
     ],
     "FINANCE": [
-        "ABCAPITAL",
-		"ANGELONE",
-		"BSE",
-		"BAJFINANCE",
-		"BAJAJFINSV",
-		"CDSL",
-		"CHOLAFIN",
-		"CAMS",
-		"HDFCLIFE",
-		"HUDCO",
-		"ICICIGI",
-		"ICICIPRULI",
-		"IRFC",
-		"JIOFIN",
-		"LICI",
-		"MUTHOOTFIN",
-		"PFC",
-		"RECLTD",
-		"SBILIFE",
-		"SAMMAANCAP",
-		"SHRIRAMFIN"
+        "ABCAPITAL", "ANGELONE", "BSE", "BAJFINANCE", "BAJAJFINSV", "CDSL", 
+        "CHOLAFIN", "CAMS", "HDFCLIFE", "HUDCO", "ICICIGI", "ICICIPRULI", 
+        "IRFC", "JIOFIN", "LICI", "MUTHOOTFIN", "PFC", "RECLTD", "SBILIFE", 
+        "SAMMAANCAP", "SHRIRAMFIN", "360ONE", "BAJAJHLDNG", "HDFCAMC", 
+        "LTF", "LICHSGFIN", "MANAPPURAM", "MFSL", "NUVAMA", "PNBHOUSING", 
+        "SBICARD", "POONAWALLA", "IIFL"
     ],
     "HEALTHCARE": [
-        "ALKEM",
-		"APOLLOHOSP",
-		"AUROPHARMA",
-		"BIOCON",
-		"CIPLA",
-		"DIVISLAB",
-		"DRREDDY",
-		"FORTIS",
-		"GLENMARK",
-		"LUPIN",
-		"MAXHEALTH",
-		"PPLPHARMA",
-		"SUNPHARMA",
-		"TORNTPHARM",
-		"ZYDUSLIFE"
+        "ALKEM", "APOLLOHOSP", "AUROPHARMA", "BIOCON", "CIPLA", "DIVISLAB", 
+        "DRREDDY", "FORTIS", "GLENMARK", "LUPIN", "MAXHEALTH", "PPLPHARMA", 
+        "SUNPHARMA", "TORNTPHARM", "ZYDUSLIFE", "LAURUSLABS", "MANKIND", 
+        "SYNGENE", "GLAND", "GRANULES"
     ],
     "IT": [
-        "COFORGE",
-		"HCLTECH",
-		"INFY",
-		"KPITTECH",
-		"KFINTECH",
-		"LTIM",
-		"MPHASIS",
-		"PERSISTENT",
-		"TCS",
-		"TATAELXSI",
-		"TATATECH",
-		"TECHM",
-		"WIPRO"
+        "COFORGE", "HCLTECH", "INFY", "KPITTECH", "KFINTECH", "LTIM", 
+        "MPHASIS", "PERSISTENT", "TCS", "TATAELXSI", "TATATECH", "TECHM", 
+        "WIPRO", "OFSS", "BSOFT", "ORACLE"
     ],
     "METALS": [
-        "COALINDIA",
-		"HINDALCO",
-		"HINDZINC",
-		"JSWSTEEL",
-		"JINDALSTEL",
-		"NMDC",
-		"NATIONALUM",
-		"SAIL",
-		"TATASTEEL",
-		"VEDL"
+        "COALINDIA", "HINDALCO", "HINDZINC", "JSWSTEEL", "JINDALSTEL", 
+        "NMDC", "NATIONALUM", "SAIL", "TATASTEEL", "VEDL", "APLAPOLLO", "JSL"
     ],
     "PLATFORMS/MISC": [
-        "ASTRAL",
-		"BHARTIARTL",
-		"DELHIVERY",
-		"DIXON",
-		"EXIDEIND",
-		"NYKAA",
-		"INDUSTOWER",
-		"INDIGO",
-		"MCX",
-		"PAYTM",
-		"SWIGGY",
-		"IDEA"
+        "ASTRAL", "BHARTIARTL", "DELHIVERY", "INDUSTOWER", "INDIGO", 
+        "MCX", "PAYTM", "SWIGGY", "IDEA", "ZOMATO", "DMART", "IEX", 
+        "INDHOTEL", "NAUKRI", "POLICYBZR", "NYKAA", "PBSTECH", "INDIAMART"
     ],
     "REALTY": [
-        "DLF",
-		"GODREJPROP",
-		"LODHA",
-		"NBCC",
-		"PRESTIGE"
-    ],
-	"MISC": [
-		"360ONE",
-		"APLAPOLLO",
-		"AMBER",
-		"ASIANPAINT",
-		"DMART",
-		"BAJAJHLDNG",
-		"BLUESTARCO",
-		"BOSCHLTD",
-		"CGPOWER",
-		"CROMPTON",
-		"DALBHARAT",
-		"ETERNAL",
-		"HDFCAMC",
-		"POWERINDIA",
-		"INDIANB",
-		"IEX",
-		"INDHOTEL",
-		"IOC",
-		"NAUKRI",
-		"INOXWIND",
-		"KEI",
-		"KAYNES",
-		"LTF",
-		"LICHSGFIN",
-		"LAURUSLABS",
-		"MANAPPURAM",
-		"MANKIND",
-		"MFSL",
-		"NUVAMA",
-		"OBEROIRLTY",
-		"OFSS",
-		"POLICYBZR",
-		"PGEL",
-		"PNBHOUSING",
-		"PATANJALI",
-		"PHOENIXLTD",
-		"PIDILITIND",
-		"RBLBANK",
-		"SBICARD",
-		"SHREECEM",
-		"SUPREMEIND",
-		"SUZLON",
-		"SYNGENE",
-		"TMPV",
-		"UNIONBANK",
-		"UNITDSPR",
-		"VOLTAS",
-		"YESBANK"
-	]	
+        "DLF", "GODREJPROP", "LODHA", "NBCC", "PRESTIGE", "OBEROIRLTY", 
+        "PHOENIXLTD"
+    ]
 }
-
 ist = pytz.timezone('Asia/Kolkata')
 today = datetime.now(ist)
 exp_dt = get_last_tuesday(today) # Assuming your helper function is defined
@@ -659,6 +493,7 @@ if df is not None:
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
     
+
 
 
 
