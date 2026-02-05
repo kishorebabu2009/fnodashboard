@@ -10,9 +10,12 @@ import calendar
 import pytz
 from datetime import datetime, timedelta
 from streamlit_autorefresh import st_autorefresh
+from PIL import Image
 
 # --- 1. CORE SYSTEM & THEME ---
-st.set_page_config(page_title="Apex Sovereign v170.0", layout="wide", page_icon="🏛️")
+# st.set_page_config(page_title="Apex Sovereign v170.0", layout="wide", page_icon="🏛️")
+logo = Image.open("https://github.com/kishorebabu2009/fnodashboard/blob/main/Kishore%20fno%20custom%20image.jpg")
+st.set_page_config(page_title="Apex Sovereign v170.0", layout="wide", page_icon=logo)
 st_autorefresh(interval=1 * 60 * 1000, key="apex_refresher")
 
 def get_last_tuesday(dt):
@@ -493,6 +496,7 @@ if df is not None:
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
     
+
 
 
 
