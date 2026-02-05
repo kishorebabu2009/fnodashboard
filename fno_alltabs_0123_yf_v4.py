@@ -359,7 +359,7 @@ if df is not None:
         
         idx_m = []
         # Mapping the pulse keys to readable names
-        for n in ["NIFTY", "BANKNIFTY", "FINNIFTY", "SENSEX"]:
+        for n in ["NIFTY", "BANKNIFTY", "FinNifty", "SENSEX"]:
             if n in pulse:
                 curr = pulse[n][0]
                 # Standard Deviation Range Formula: Price * (VIX/100) * SQRT(Days/365)
@@ -496,6 +496,7 @@ if df is not None:
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
     
+
 
 
 
