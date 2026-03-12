@@ -232,12 +232,23 @@ with st.sidebar:
                 # 1. Trend Factor (Max 40 pts)
                 # Reward based on proximity to MA50 and MA200
                 s1 = 0
-                # Check if ma200 exists and has data
-                if ma200 is not None and not ma200.empty:
-                    if curr_c > ma200.iloc[-1]: 
-                        s1 += 10
+                # 1. Ensure ma200 exists
+                # 2. Ensure it is not empty
+                # 3. Ensure the last value is a valid number (not NaN)
+                
+                import numpy as np
+                
+                if ma200 is not None and len(ma200) > 0:
+                    last_ma200 = ma200[-1]
+                    
+                    # Check if the value is actually a number before comparing
+                    if not np.isnan(last_ma200):
+                        if curr_c > last_ma200:
+                            s1 += 10
+                    else:
+                        st.warning("MA200 value is NaN (not enough data points yet).")
                 else:
-                    st.warning("MA200 could not be calculated. Ensure you have at least 200 days of data.")
+                    st.error("Could not calculate MA200. Check your data source.")
                 
                 if curr_c > ma20.iloc[-1]: s1 += 10
                 if curr_c > ma50.iloc[-1]: s1 += 10
@@ -503,6 +514,7 @@ if df is not None:
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
     
+
 
 
 
