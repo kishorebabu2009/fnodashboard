@@ -241,8 +241,8 @@ with st.sidebar:
                 
                 if curr_c > ma20.iloc[-1]: s1 += 10
                 if curr_c > ma50.iloc[-1]: s1 += 10
-                if curr_c > ma200.iloc[-1]: s1 += 10
-                if ma20.iloc[-1] > ma50.iloc[-1] > ma200.iloc[-1]: s1 += 10 # Golden Alignment bonus
+                if curr_c > ma200.[-1]: s1 += 10
+                if ma20.iloc[-1] > ma50.iloc[-1] > ma200[-1]: s1 += 10 # Golden Alignment bonus
                 s1 = min(s1, 40) # Cap at 40
 
                 # 2. Momentum & Overbought Protection (Max 30 pts)
@@ -503,6 +503,7 @@ if df is not None:
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
     
+
 
 
 
