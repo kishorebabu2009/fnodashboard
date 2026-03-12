@@ -232,6 +232,13 @@ with st.sidebar:
                 # 1. Trend Factor (Max 40 pts)
                 # Reward based on proximity to MA50 and MA200
                 s1 = 0
+                # Check if ma200 exists and has data
+                if ma200 is not None and not ma200.empty:
+                    if curr_c > ma200.iloc[-1]: 
+                        s1 += 10
+                else:
+                    st.warning("MA200 could not be calculated. Ensure you have at least 200 days of data.")
+                
                 if curr_c > ma20.iloc[-1]: s1 += 10
                 if curr_c > ma50.iloc[-1]: s1 += 10
                 if curr_c > ma200.iloc[-1]: s1 += 10
@@ -496,6 +503,7 @@ if df is not None:
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
     
+
 
 
 
