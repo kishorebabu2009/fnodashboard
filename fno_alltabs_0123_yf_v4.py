@@ -231,30 +231,32 @@ with st.sidebar:
                 
                 # 1. Trend Factor (Max 40 pts)
                 # Reward based on proximity to MA50 and MA200
+                # 1. Trend Factor (Max 40 pts)
                 s1 = 0
-                # 1. Ensure ma200 exists
-                # 2. Ensure it is not empty
-                # 3. Ensure the last value is a valid number (not NaN)
-                
                 import numpy as np
                 
-                if ma200 is not None and len(ma200) > 0:
-                    last_ma200 = ma200[-1]
-                    
-                    # Check if the value is actually a number before comparing
-                    if not np.isnan(last_ma200):
-                        if curr_c > last_ma200:
-                            s1 += 10
-                    else:
-                        st.warning("MA200 value is NaN (not enough data points yet).")
-                else:
-                    st.error("Could not calculate MA200. Check your data source.")
+                # A "Gatekeeper" check: Ensure all arrays exist and have data
+                try:
+                    # Safely get the last values
+                    # We use .iloc[-1] for Pandas Series and [-1] for NumPy arrays/lists
+                    m20  = ma20.iloc[-1]  if hasattr(ma20, 'iloc') else ma20[-1]
+                    m50  = ma50.iloc[-1]  if hasattr(ma50, 'iloc') else ma50[-1]
+                    m200 = ma200.iloc[-1] if hasattr(ma200, 'iloc') else ma200[-1]
                 
-                if curr_c > ma20.iloc[-1]: s1 += 10
-                if curr_c > ma50.iloc[-1]: s1 += 10
-                if curr_c > ma200[-1]: s1 += 10
-                if ma20.iloc[-1] > ma50.iloc[-1] > ma200[-1]: s1 += 10 # Golden Alignment bonus
-                s1 = min(s1, 40) # Cap at 40
+                    # Check if any values are NaN (Not a Number)
+                    if not np.isnan([m20, m50, m200]).any():
+                        if curr_c > m20: s1 += 10
+                        if curr_c > m50: s1 += 10
+                        if curr_c > m200: s1 += 10
+                        
+                        # Golden Alignment bonus
+                        if m20 > m50 > m200: 
+                            s1 += 10
+                            
+                    s1 = min(s1, 40) # Cap at 40
+                
+                except Exception as e:
+                    st.warning(f"Trend Factor scoring skipped: Insufficient data for indicators.")
 
                 # 2. Momentum & Overbought Protection (Max 30 pts)
                 s2 = 0
@@ -514,6 +516,7 @@ if df is not None:
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
     
+
 
 
 
