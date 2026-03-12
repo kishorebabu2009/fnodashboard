@@ -231,20 +231,36 @@ with st.sidebar:
                 
                 # 1. Trend Factor (Max 40 pts)
                 # Reward based on proximity to MA50 and MA200
-                # 1. Trend Factor (Max 40 pts)
+                                        
                 s1 = 0
                 import numpy as np
                 
-                # A "Gatekeeper" check: Ensure all arrays exist and have data
-                try:
-                    # Safely get the last values
-                    # We use .iloc[-1] for Pandas Series and [-1] for NumPy arrays/lists
-                    m20  = ma20.iloc[-1]  if hasattr(ma20, 'iloc') else ma20[-1]
-                    m50  = ma50.iloc[-1]  if hasattr(ma50, 'iloc') else ma50[-1]
-                    m200 = ma200.iloc[-1] if hasattr(ma200, 'iloc') else ma200[-1]
+                # Helper function to safely get the last valid value from any data type
+                def get_last_val(series):
+                    try:
+                        if series is None:
+                            return None
+                        # Handle Pandas Series/DataFrame
+                        if hasattr(series, 'iloc'):
+                            return series.iloc[-1] if not series.empty else None
+                        # Handle List or NumPy Array
+                        if len(series) > 0:
+                            return series[-1]
+                        return None
+                    except:
+                        return None
                 
-                    # Check if any values are NaN (Not a Number)
-                    if not np.isnan([m20, m50, m200]).any():
+                # 1. Safely extract values
+                m20  = get_last_val(ma20)
+                m50  = get_last_val(ma50)
+                m200 = get_last_val(ma200)
+                
+                # 2. Score only if all indicators were successfully calculated
+                # We check that none are 'None' AND none are 'NaN'
+                try:
+                    indicators = [m20, m50, m200]
+                    if all(v is not None for v in indicators) and not np.isnan(indicators).any():
+                        
                         if curr_c > m20: s1 += 10
                         if curr_c > m50: s1 += 10
                         if curr_c > m200: s1 += 10
@@ -253,10 +269,15 @@ with st.sidebar:
                         if m20 > m50 > m200: 
                             s1 += 10
                             
-                    s1 = min(s1, 40) # Cap at 40
+                        s1 = min(s1, 40) # Cap at 40
+                    else:
+                        # Instead of a full error, we just warn the user data is missing for this ticker
+                        st.caption("Trend scoring skipped: Data missing for one or more MAs.")
                 
                 except Exception as e:
-                    st.warning(f"Trend Factor scoring skipped: Insufficient data for indicators.")
+                    # Final fallback to keep the app running
+                    s1 = 0
+                
 
                 # 2. Momentum & Overbought Protection (Max 30 pts)
                 s2 = 0
@@ -516,6 +537,7 @@ if df is not None:
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
     
+
 
 
 
