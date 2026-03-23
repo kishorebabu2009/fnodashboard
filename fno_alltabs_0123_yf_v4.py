@@ -231,53 +231,12 @@ with st.sidebar:
                 
                 # 1. Trend Factor (Max 40 pts)
                 # Reward based on proximity to MA50 and MA200
-                                        
                 s1 = 0
-                import numpy as np
-                
-                # Helper function to safely get the last valid value from any data type
-                def get_last_val(series):
-                    try:
-                        if series is None:
-                            return None
-                        # Handle Pandas Series/DataFrame
-                        if hasattr(series, 'iloc'):
-                            return series.iloc[-1] if not series.empty else None
-                        # Handle List or NumPy Array
-                        if len(series) > 0:
-                            return series[-1]
-                        return None
-                    except:
-                        return None
-                
-                # 1. Safely extract values
-                m20  = get_last_val(ma20)
-                m50  = get_last_val(ma50)
-                m200 = get_last_val(ma200)
-                
-                # 2. Score only if all indicators were successfully calculated
-                # We check that none are 'None' AND none are 'NaN'
-                try:
-                    indicators = [m20, m50, m200]
-                    if all(v is not None for v in indicators) and not np.isnan(indicators).any():
-                        
-                        if curr_c > m20: s1 += 10
-                        if curr_c > m50: s1 += 10
-                        if curr_c > m200: s1 += 10
-                        
-                        # Golden Alignment bonus
-                        if m20 > m50 > m200: 
-                            s1 += 10
-                            
-                        s1 = min(s1, 40) # Cap at 40
-                    else:
-                        # Instead of a full error, we just warn the user data is missing for this ticker
-                        st.caption("Trend scoring skipped: Data missing for one or more MAs.")
-                
-                except Exception as e:
-                    # Final fallback to keep the app running
-                    s1 = 0
-                
+                if curr_c > ma20.iloc[-1]: s1 += 10
+                if curr_c > ma50.iloc[-1]: s1 += 10
+                if curr_c > ma200.iloc[-1]: s1 += 10
+                if ma20.iloc[-1] > ma50.iloc[-1] > ma200.iloc[-1]: s1 += 10 # Golden Alignment bonus
+                s1 = min(s1, 40) # Cap at 40
 
                 # 2. Momentum & Overbought Protection (Max 30 pts)
                 s2 = 0
@@ -536,32 +495,3 @@ if df is not None:
 
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
