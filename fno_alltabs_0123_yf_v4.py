@@ -205,78 +205,158 @@ with st.sidebar:
         results = []
         targets = [(s, sec) for sec in sel_sec for s in SECTOR_MAP[sec]]
         p_txt = st.empty()
+        # --- SAFE HELPERS ---
+        def safe_last(series, default=None, round_to=None):
+            try:
+                if series is None:
+                    return default
+                if not hasattr(series, "dropna"):
+                    return default
+        
+                s = series.dropna()
+                if len(s) == 0:
+                    return default
+        
+                val = s.iloc[-1]
+                return round(val, round_to) if round_to is not None else val
+            except:
+                return default
+        def safe_last_df(df, col_index=0, default=None, round_to=None):
+            try:
+                if df is None or len(df) == 0:
+                    return default
+        
+                col = df.iloc[:, col_index].dropna()
+                if len(col) == 0:
+                    return default
+
+                val = col.iloc[-1]
+                return round(val, round_to) if round_to is not None else val
+            except:
+                return default
+
+        # --- MAIN LOOP ---
         for i, (s, sec) in enumerate(targets):
             p_txt.info(f"[{i+1}/{len(targets)}] | `{s}` | {sec}")
+            
             d = yf.download(f"{s}.NS", period="1y", interval="1d", progress=False)
-            if not d.empty and len(d) > 100:
-                if isinstance(d.columns, pd.MultiIndex): d.columns = d.columns.get_level_values(0)
+        
+            if not d.empty and len(d) > 220:  # safer for MA200
+                if isinstance(d.columns, pd.MultiIndex):
+                    d.columns = d.columns.get_level_values(0)
+        
                 c, h, l, v = d['Close'], d['High'], d['Low'], d['Volume']
-                
+        
                 # Indicators
                 ma20, ma50, ma200 = ta.sma(c, 20), ta.sma(c, 50), ta.sma(c, 200)
                 rsi = ta.rsi(c, 14)
                 atr = ta.atr(h, l, c, 14)
-                vwap = ( ( (h + l + c) / 3 ) * v).rolling(14).sum() / v.rolling(14).sum()
+                vwap = (((h + l + c) / 3) * v).rolling(14).sum() / v.rolling(14).sum()
                 adx = ta.adx(h, l, c)
                 st_df = ta.supertrend(h, l, c, 7, 3)
-                
+        
                 # CPR
                 ph, pl, pc = h.iloc[-2], l.iloc[-2], c.iloc[-2]
                 pivot = (ph + pl + pc) / 3
                 bc = (ph + pl) / 2
                 tc = (pivot - bc) + pivot
-                
+        
+                # --- SAFE VALUES ---
+                curr_c = safe_last(c)
+                prev_c = safe_last(c[:-1])
+        
+                curr_rsi = safe_last(rsi)
+                curr_atr = safe_last(atr)
+                curr_vwap = safe_last(vwap)
+        
+                curr_ma20 = safe_last(ma20)
+                curr_ma50 = safe_last(ma50)
+                curr_ma200 = safe_last(ma200)
+        
+                curr_adx = safe_last_df(adx, 0)
+        
+                is_bull_st = False
+                if st_df is not None and len(st_df) > 0:
+                    try:
+                        is_bull_st = st_df.iloc[:, 1].dropna().iloc[-1] > 0
+                    except:
+                        is_bull_st = False
+        
                 # --- IMPROVED MULTI-FACTOR SCORING ENGINE ---
-                curr_c = c.iloc[-1]
-                
-                # 1. Trend Factor (Max 40 pts)
-                # Reward based on proximity to MA50 and MA200
                 s1 = 0
-                if curr_c > ma20.iloc[-1]: s1 += 10
-                if curr_c > ma50.iloc[-1]: s1 += 10
-                if ma200 is not None and hasattr(ma200, "iloc") and len(ma200.dropna()) > 0:
-                    if curr_c > ma200.dropna().iloc[-1]: s1 += 10
-                    # if curr_c > ma200.iloc[-1]: s1 += 10
-                if ma20.iloc[-1] > ma50.iloc[-1] > ma200.iloc[-1]: s1 += 10 # Golden Alignment bonus
-                s1 = min(s1, 40) # Cap at 40
-
-                # 2. Momentum & Overbought Protection (Max 30 pts)
+                if curr_c and curr_ma20 and curr_c > curr_ma20: 
+                    s1 += 10
+                if curr_c and curr_ma50 and curr_c > curr_ma50: 
+                    s1 += 10
+                if curr_c and curr_ma200 and curr_c > curr_ma200: 
+                    s1 += 10
+                if curr_ma20 and curr_ma50 and curr_ma200:
+                    if curr_ma20 > curr_ma50 > curr_ma200:
+                        s1 += 10
+                s1 = min(s1, 40)
+        
+                # Momentum
                 s2 = 0
-                curr_rsi = rsi.iloc[-1]
-                if 55 <= curr_rsi <= 70: 
-                    s2 = 30  # "Sweet Spot" Momentum
-                elif curr_rsi > 75:
-                    s2 = 15  # Caution: Overbought territory
-                elif 45 <= curr_rsi < 55:
-                    s2 = 15  # Building strength
-                
-                # 3. Trend Intensity & Volatility (Max 30 pts)
+                if curr_rsi:
+                    if 55 <= curr_rsi <= 70:
+                        s2 = 30
+                    elif curr_rsi > 75:
+                        s2 = 15
+                    elif 45 <= curr_rsi < 55:
+                        s2 = 15
+        
+                # Trend Strength
                 s3 = 0
-                curr_adx = adx.iloc[-1, 0]
-                is_bull_st = (st_df is not None and st_df.iloc[-1, 1] > 0)
-                
-                if curr_c > vwap.iloc[-1]: s3 += 5
-                if is_bull_st: s3 += 5
-                if curr_adx > 25: s3 += 15 # Strong Trend Confirmation
-                elif curr_adx > 40: s3 += 5 # Exhaustion risk but high strength
-
-                # 4. Volume Surge (Bonus 10 pts)
-                # Compare current volume to 20-day average
-                vol_ma20 = v.rolling(20).mean().iloc[-1]
-                s4 = 10 if v.iloc[-1] > (vol_ma20 * 1.5) else 0
-
+                if curr_c and curr_vwap and curr_c > curr_vwap:
+                    s3 += 5
+                if is_bull_st:
+                    s3 += 5
+                if curr_adx:
+                    if curr_adx > 40:
+                        s3 += 5
+                    elif curr_adx > 25:
+                        s3 += 15
+        
+                # Volume Surge
+                vol_ma20 = safe_last(v.rolling(20).mean())
+                curr_vol = safe_last(v)
+                s4 = 10 if (curr_vol and vol_ma20 and curr_vol > vol_ma20 * 1.5) else 0
+        
                 final_score = min(s1 + s2 + s3 + s4, 100)
-                # Create detailed contribution string for Deep Dive
+        
                 contrib_msg = f"Golden-cross:{s1} | RelativeStrength:{s2} | TrendIntensity:{s3} | V-Surge:{s4}"
-                # --- END SCORING ENGINE ---
-                
+        
+                # --- PRICE CALCS ---
+                chg = None
+                gap = None
+        
+                if curr_c and prev_c:
+                    chg = round(((curr_c / prev_c) - 1) * 100, 2)
+        
+                open_price = safe_last(d['Open'])
+                if open_price and prev_c:
+                    gap = round(((open_price / prev_c) - 1) * 100, 2)
+        
+                # --- RESULTS ---
                 results.append({
-                    'Symbol': s, 'Sector': sec, 'SCORE': final_score, 'LTP': c.iloc[-1],
-                    'CHG': round(((c.iloc[-1]/c.iloc[-2])-1)*100,2), 'Gap_Pct': round(((d['Open'].iloc[-1]/c.iloc[-2])-1)*100,2),
-                    'RSI': round(rsi.iloc[-1],2), 'ATR': round(atr.iloc[-1],2), 'ADX': round(adx.iloc[-1, 0],2),
-                    'MA20': round(ma20.iloc[-1],2), 'MA50': round(ma50.iloc[-1],2), 'MA200': round(ma200.iloc[-1],2),
-                    'VWAP': round(vwap.iloc[-1],2), 'Pivot': round(pivot,2), 'TC': round(tc,2), 'BC': round(bc,2),
-                    'ST_Dir': "BULL" if is_bull_st else "BEAR", 'VFI': round((v.iloc[-1]/v.rolling(20).mean().iloc[-1]),2),
+                    'Symbol': s,
+                    'Sector': sec,
+                    'SCORE': final_score,
+                    'LTP': curr_c,
+                    'CHG': chg,
+                    'Gap_Pct': gap,
+                    'RSI': round(curr_rsi, 2) if curr_rsi else None,
+                    'ATR': round(curr_atr, 2) if curr_atr else None,
+                    'ADX': round(curr_adx, 2) if curr_adx else None,
+                    'MA20': curr_ma20,
+                    'MA50': curr_ma50,
+                    'MA200': curr_ma200,
+                    'VWAP': round(curr_vwap, 2) if curr_vwap else None,
+                    'Pivot': round(pivot, 2),
+                    'TC': round(tc, 2),
+                    'BC': round(bc, 2),
+                    'ST_Dir': "BULL" if is_bull_st else "BEAR",
+                    'VFI': round((curr_vol / vol_ma20), 2) if curr_vol and vol_ma20 else None,
                     'CONTRIB': contrib_msg
                 })
         st.session_state.master_df = pd.DataFrame(results).fillna(0)
@@ -497,6 +577,7 @@ if df is not None:
 
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
+
 
 
 
