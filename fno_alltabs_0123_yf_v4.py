@@ -149,7 +149,8 @@ SECTOR_MAP = {
     "PLATFORMS/MISC": [
         "ASTRAL", "BHARTIARTL", "DELHIVERY", "INDUSTOWER", "INDIGO", 
         "MCX", "PAYTM", "SWIGGY", "IDEA", "ZOMATO", "DMART", "IEX", 
-        "INDHOTEL", "NAUKRI", "POLICYBZR", "NYKAA", "PBSTECH", "INDIAMART"
+        "INDHOTEL", "NAUKRI", "POLICYBZR", "NYKAA", "PBSTECH", "INDIAMART",
+        "JUBLFOOD"
     ],
     "REALTY": [
         "DLF", "GODREJPROP", "LODHA", "NBCC", "PRESTIGE", "OBEROIRLTY", 
@@ -577,6 +578,7 @@ if df is not None:
 
 else:
     st.info("System Standby. Execute Market Scan to activate modules.")
+
 
 
 
